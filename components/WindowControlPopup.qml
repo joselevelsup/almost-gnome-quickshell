@@ -8,8 +8,13 @@ import ".."
 
 // Gestión de la ventana activa (flotante, pin, pseudo-tile, monocle,
 // pantalla completa, cerrar, mover de workspace) más un asistente para el
-// motor de tiling dwindle (bsp) de Hyprland: preselección de split,
-// orientación e intercambio.
+// motor de tiling de Hyprland: preselección de split, orientación e
+// intercambio en dwindle (bsp) y cinta/columnas en scrolling.
+//
+// El layout es por workspace: se lee del workspace activo y se cambia con
+// una regla de workspace (hl.workspace_rule), que tiene prioridad sobre
+// general:layout. Ojo: un `hyprctl reload` reconstruye las reglas del
+// config y descarta lo que se haya elegido desde acá.
 //
 // Nota sobre la sintaxis: este Hyprland usa config en Lua (hl.*) y el
 // socket de "dispatch" evalúa el string recibido como código Lua
@@ -24,6 +29,8 @@ PopupCard {
 
     property var activeWin: ({})
     property string currentLayout: "dwindle"
+    // Workspace activo: el layout se aplica por workspace, no global.
+    property int activeWsId: -1
     readonly property bool hasWin: popup.activeWin && popup.activeWin.address !== undefined
     readonly property bool isFloating: popup.hasWin && popup.activeWin.floating === true
 
@@ -54,12 +61,13 @@ PopupCard {
         popup.act("hl.dsp.window.fullscreen_state({ internal = " + target + ", client = " + target + " })")
     }
     function setLayout(name) {
-        // hl.config(...) no es un dispatcher: no pasa por Hyprland.dispatch(),
-        // se manda vía `hyprctl repl` (equivalente al `keyword` clásico, que
-        // esta versión de Hyprland ya no acepta: "can't work with non-legacy
-        // parsers").
+        // El layout de un workspace lo fija una regla de workspace, que tiene
+        // prioridad sobre general:layout. Se añade en runtime con
+        // `hyprctl repl` (hl.workspace_rule no es un dispatcher, y el
+        // `keyword` clásico ya no existe en esta versión de Hyprland).
+        if (popup.activeWsId < 0) return
         popup.currentLayout = name
-        Quickshell.execDetached(["hyprctl", "repl", "hl.config({ general = { layout = \"" + name + "\" } })"])
+        Quickshell.execDetached(["hyprctl", "repl", "hl.workspace_rule({ workspace = '" + popup.activeWsId + "', layout = '" + name + "' })"])
         settleTimer.restart()
     }
     function moveTo(ws) {
@@ -83,10 +91,16 @@ PopupCard {
     }
     Process {
         id: layoutProc
-        command: ["hyprctl", "getoption", "general:layout", "-j"]
+        // tiledLayout del workspace activo: es el layout efectivo (la regla
+        // del workspace manda sobre general:layout).
+        command: ["hyprctl", "activeworkspace", "-j"]
         stdout: StdioCollector {
             onStreamFinished: {
-                try { popup.currentLayout = JSON.parse(text).str || "dwindle" } catch (e) {}
+                try {
+                    var ws = JSON.parse(text)
+                    popup.activeWsId = ws.id
+                    popup.currentLayout = ws.tiledLayout || "dwindle"
+                } catch (e) {}
             }
         }
     }
@@ -220,13 +234,16 @@ PopupCard {
     // =================================================================
     // Motor de tiling
     // =================================================================
-    SectionLabel { text: "Disposición" }
+    SectionLabel {
+        text: popup.activeWsId > 0 ? "Disposición · ws " + popup.activeWsId : "Disposición"
+    }
 
     SegmentedControl {
         width: parent.width
         model: [
-            { label: "Dwindle (bsp)", value: "dwindle" },
-            { label: "Master", value: "master" }
+            { label: "Dwindle", value: "dwindle" },
+            { label: "Master", value: "master" },
+            { label: "Scrolling", value: "scrolling" }
         ]
         current: popup.currentLayout
         onSelected: value => popup.setLayout(value)
@@ -303,6 +320,78 @@ PopupCard {
                     label: "Intercambiar"
                     onClicked: popup.act("hl.dsp.layout(\"swapsplit\")")
                 }
+            }
+        }
+    }
+
+    // ---- Asistente scrolling: cinta, columnas y ancho ----
+    ColumnLayout {
+        visible: popup.currentLayout === "scrolling"
+        width: parent.width
+        spacing: 8
+
+        GridLayout {
+            columns: 3
+            columnSpacing: 3
+            rowSpacing: 3
+
+            ChipButton { icon: "pan-start-symbolic"; onClicked: popup.act("hl.dsp.layout(\"move -col\")") }
+            ChipButton { icon: "view-dual-symbolic"; onClicked: popup.act("hl.dsp.layout(\"swapcol l\")") }
+            ChipButton { icon: "pan-end-symbolic"; onClicked: popup.act("hl.dsp.layout(\"move +col\")") }
+
+            ChipButton { icon: "media-skip-backward-symbolic"; onClicked: popup.act("hl.dsp.layout(\"focus l\")") }
+            ChipButton { icon: "zoom-fit-best-symbolic"; onClicked: popup.act("hl.dsp.layout(\"fit_into_view\")") }
+            ChipButton { icon: "media-skip-forward-symbolic"; onClicked: popup.act("hl.dsp.layout(\"focus r\")") }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            text: "Desplaza la cinta, salta entre columnas y céntrala en pantalla"
+            color: Theme.fgDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 10
+            wrapMode: Text.WordWrap
+        }
+
+        GridLayout {
+            columns: 2
+            columnSpacing: 3
+            rowSpacing: 3
+
+            ChipButton {
+                text: "Estrechar"
+                icon: "object-flip-horizontal-symbolic"
+                onClicked: popup.act("hl.dsp.layout(\"colresize -conf\")")
+            }
+            ChipButton {
+                text: "Ensanchar"
+                icon: "view-fullscreen-symbolic"
+                onClicked: popup.act("hl.dsp.layout(\"colresize +conf\")")
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 34
+            radius: Theme.radius - 6
+            color: Theme.cardBg
+            ActionRow {
+                anchors.fill: parent
+                icon: "list-add-symbolic"
+                label: "Columna propia"
+                onClicked: popup.act("hl.dsp.layout(\"promote\")")
+            }
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 34
+            radius: Theme.radius - 6
+            color: Theme.cardBg
+            ActionRow {
+                anchors.fill: parent
+                icon: "view-dual-symbolic"
+                label: "Unir con la siguiente"
+                onClicked: popup.act("hl.dsp.layout(\"consume\")")
             }
         }
     }
