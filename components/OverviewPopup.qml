@@ -39,11 +39,18 @@ PanelWindow {
     // mosaico se reemplaza por los resultados.
     property string query: ""
     property int selIndex: 0
-    readonly property bool searching: query.trim().length > 0
+    // Grilla de aplicaciones (esquina caliente inferior izquierda): con el
+    // campo vacío se listan todas las apps en vez del mosaico de workspaces.
+    readonly property bool appGrid: overview.visible && PopupManager.appsMode
+    readonly property bool searching: query.trim().length > 0 || overview.appGrid
     readonly property int resultCols: 6
     readonly property var results: {
         var q = query.trim().toLowerCase()
-        if (q.length === 0) return []
+        var apps = DesktopEntries.applications.values.filter(e => !e.noDisplay)
+        if (q.length === 0) {
+            if (!overview.appGrid) return []
+            return apps.slice().sort((a, b) => a.name.localeCompare(b.name))
+        }
         function score(e) {
             var n = (e.name || "").toLowerCase()
             if (n.startsWith(q)) return 100
@@ -54,8 +61,7 @@ PanelWindow {
             if ((e.comment || "").toLowerCase().indexOf(q) !== -1) return 20
             return 0
         }
-        return DesktopEntries.applications.values
-            .filter(e => !e.noDisplay)
+        return apps
             .map(e => ({ entry: e, score: score(e) }))
             .filter(r => r.score > 0)
             .sort((a, b) => (b.score - a.score) || a.entry.name.localeCompare(b.entry.name))
@@ -241,8 +247,9 @@ PanelWindow {
                         Keys.onPressed: event => {
                             switch (event.key) {
                             case Qt.Key_Escape:
-                                // Primero se limpia la búsqueda; con el campo vacío, cierra.
-                                if (overview.searching) overview.query = ""
+                                // Primero se limpia la búsqueda; con el campo
+                                // vacío (o en la grilla), cierra.
+                                if (overview.query.trim().length > 0) overview.query = ""
                                 else PopupManager.close()
                                 break
                             case Qt.Key_Return:
@@ -298,58 +305,72 @@ PanelWindow {
                 anchors.topMargin: 96
                 visible: overview.searching
 
-                Grid {
-                    id: resultsGrid
-                    anchors { top: parent.top; topMargin: 16; horizontalCenter: parent.horizontalCenter }
-                    columns: Math.min(overview.resultCols, Math.max(1, overview.results.length))
-                    spacing: 8
+                // Lista larga (grilla con todas las apps) → scroll.
+                Flickable {
+                    id: resultsFlick
+                    anchors.fill: parent
+                    anchors.topMargin: 16
+                    anchors.bottomMargin: 16
+                    contentWidth: width
+                    contentHeight: resultsGrid.height
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    interactive: contentHeight > height
 
-                    Repeater {
-                        model: overview.results
-                        delegate: Rectangle {
-                            id: appTile
-                            required property var modelData
-                            required property int index
-                            readonly property bool selected: index === overview.selIndex
-                            width: 120
-                            height: 112
-                            radius: Theme.radius - 2
-                            color: selected ? Theme.activeBg : appMouse.containsMouse ? Theme.cardHoverBg : Theme.cardBg
-                            border.width: selected ? 2 : 1
-                            border.color: selected ? Theme.accent : Theme.border
-                            scale: appMouse.pressed ? 0.96 : 1
+                    Grid {
+                        id: resultsGrid
+                        x: Math.max(0, (resultsFlick.width - width) / 2)
+                        y: 0
+                        columns: Math.min(overview.resultCols, Math.max(1, overview.results.length))
+                        spacing: 8
 
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                        Repeater {
+                            model: overview.results
+                            delegate: Rectangle {
+                                id: appTile
+                                required property var modelData
+                                required property int index
+                                readonly property bool selected: index === overview.selIndex
+                                width: 120
+                                height: 112
+                                radius: Theme.radius - 2
+                                color: selected ? Theme.activeBg : appMouse.containsMouse ? Theme.cardHoverBg : Theme.cardBg
+                                border.width: selected ? 2 : 1
+                                border.color: selected ? Theme.accent : Theme.border
+                                scale: appMouse.pressed ? 0.96 : 1
 
-                            Column {
-                                anchors.centerIn: parent
-                                width: parent.width - 16
-                                spacing: 8
-                                IconImage {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    source: Quickshell.iconPath(appTile.modelData.icon, "application-x-executable")
-                                    implicitSize: 48
+                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    width: parent.width - 16
+                                    spacing: 8
+                                    IconImage {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        source: Quickshell.iconPath(appTile.modelData.icon, "application-x-executable")
+                                        implicitSize: 48
+                                    }
+                                    Text {
+                                        width: parent.width
+                                        text: appTile.modelData.name
+                                        color: Theme.fg
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 11
+                                        font.weight: appTile.selected ? Font.DemiBold : Font.Normal
+                                        elide: Text.ElideRight
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
                                 }
-                                Text {
-                                    width: parent.width
-                                    text: appTile.modelData.name
-                                    color: Theme.fg
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: appTile.selected ? Font.DemiBold : Font.Normal
-                                    elide: Text.ElideRight
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
 
-                            MouseArea {
-                                id: appMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onEntered: overview.selIndex = appTile.index
-                                onClicked: overview.launch(appTile.modelData)
+                                MouseArea {
+                                    id: appMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onEntered: overview.selIndex = appTile.index
+                                    onClicked: overview.launch(appTile.modelData)
+                                }
                             }
                         }
                     }

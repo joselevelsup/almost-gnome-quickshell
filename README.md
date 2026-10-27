@@ -23,6 +23,15 @@ selected one.
 ![Overview](docs/screenshots/overview.png)
 ![App search](docs/screenshots/overview-search.png)
 
+### Hot corners
+
+Two hot corners, GNOME style: keep the pointer in the corner for ~180 ms and
+the action fires (passing by does nothing). The top‑left corner opens the
+overview; the bottom‑left one opens the app grid (the overview listing every
+installed application, alphabetical and scrollable — keep typing to filter).
+Both are inert while a popup is open, and re‑entering the corner right after
+closing one does nothing.
+
 ### Quick settings
 
 Wi‑Fi, Bluetooth, Do Not Disturb, dark style, Caffeine (idle inhibitor) and
@@ -140,7 +149,7 @@ The shell exposes IPC targets for Hyprland binds:
 
 | Command | Action |
 |---|---|
-| `qs ipc call overview toggle` | Open/close the overview (also `open`, `close`) |
+| `qs ipc call overview toggle` | Open/close the overview (also `open`, `close`, `apps`) |
 | `qs ipc call screenshot toggle` | Open/close the screenshot panel |
 | `qs ipc call winswitch next\|prev\|confirm\|cancel` | Alt+Tab switcher |
 | `qs ipc call wsswitch next\|prev\|confirm\|cancel` | Super+Tab switcher |
@@ -178,7 +187,8 @@ DockPins.qml          Pinned dock apps
 Caffeine.qml          Idle inhibitor state
 components/
   Bar.qml             Top bar; hosts every popup, dock and OSD
-  OverviewPopup.qml   Workspace overview + app search
+  HotCorner.qml       Hover‑with‑delay hot corners (overview / app grid)
+  OverviewPopup.qml   Workspace overview + app search + app grid
   QuickSettingsPanel.qml
   CalendarPopup.qml   Calendar, notifications, MediaPlayer
   Dock.qml            Dock (DockItem, DockMenu)

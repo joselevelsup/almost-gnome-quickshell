@@ -63,6 +63,11 @@ PanelWindow {
     }
 
     DismissLayer {}
+    // Esquinas calientes (hover con retardo, ver HotCorner.qml): la
+    // superior izquierda abre el overview, la inferior izquierda la grilla
+    // de aplicaciones.
+    HotCorner { edge: "top"; action: "overview" }
+    HotCorner { edge: "bottom"; action: "apps" }
     CalendarPopup {}
     QuickSettingsPanel {}
     WindowControlPopup {}
