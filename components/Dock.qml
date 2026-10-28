@@ -60,7 +60,7 @@ PanelWindow {
 
     function activateApp(app) {
         if (app.windows.length === 0) {
-            if (app.entry) app.entry.execute()
+            if (app.entry) AppLauncher.launch(app.entry)
             return
         }
         // Con varias ventanas, cada click pasa a la siguiente.
@@ -144,7 +144,7 @@ PanelWindow {
                         highlighted: menu.visible && menu.appKey === slot.modelData.key
                         onHoveredChanged: tooltip.target = hovered ? dockItem : (tooltip.target === dockItem ? null : tooltip.target)
                         onActivated: dock.activateApp(slot.modelData)
-                        onNewWindow: if (slot.modelData.entry) slot.modelData.entry.execute()
+                        onNewWindow: if (slot.modelData.entry) AppLauncher.launch(slot.modelData.entry)
                         onMenuRequested: menu.openFor(slot.modelData, dockItem)
                     }
                 }

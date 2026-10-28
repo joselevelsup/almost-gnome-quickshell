@@ -72,7 +72,7 @@ PanelWindow {
 
     function launch(entry) {
         if (!entry) return
-        entry.execute()
+        AppLauncher.launch(entry)
         PopupManager.close()
     }
     function moveSelection(delta) {
@@ -106,9 +106,25 @@ PanelWindow {
     readonly property real cardH: Math.round(cardW / aspect)
 
     function refresh() { clientsProc.running = true; activeProc.running = true }
-    function focusWorkspace(id) {
-        Hyprland.dispatch("hl.dsp.focus({ workspace = " + id + " })")
+    // El overview tiene teclado exclusivo: al cerrarse, Hyprland devuelve el
+    // foco a la ventana enfocada antes y con ella al workspace de origen,
+    // pisando cualquier focus despachado mientras seguía abierto. Por eso
+    // primero se cierra y el focus se despacha después de que se desmapea.
+    property string pendingFocus: ""
+    function closeThenDispatch(dispatcher) {
+        overview.pendingFocus = dispatcher
         PopupManager.close()
+    }
+    Timer {
+        id: pendingFocusTimer
+        interval: 60
+        onTriggered: {
+            if (overview.pendingFocus !== "") Hyprland.dispatch(overview.pendingFocus)
+            overview.pendingFocus = ""
+        }
+    }
+    function focusWorkspace(id) {
+        overview.closeThenDispatch("hl.dsp.focus({ workspace = " + id + " })")
     }
     function moveWindow(address, wsId) {
         Hyprland.dispatch("hl.dsp.window.move({ workspace = " + wsId +
@@ -136,6 +152,7 @@ PanelWindow {
             dropTarget = -1
             ghost.visible = false
             query = ""
+            if (pendingFocus !== "") pendingFocusTimer.restart()
         }
     }
     Timer { interval: 1000; running: overview.visible; repeat: true; onTriggered: overview.refresh() }
@@ -577,8 +594,7 @@ PanelWindow {
                                                         overview.moveWindow(winBox.modelData.address, overview.dropTarget)
                                                     overview.dropTarget = -1
                                                 } else if (containsMouse) {
-                                                    Hyprland.dispatch("hl.dsp.focus({ window = \"address:" + winBox.modelData.address + "\" })")
-                                                    PopupManager.close()
+                                                    overview.closeThenDispatch("hl.dsp.focus({ window = \"address:" + winBox.modelData.address + "\" })")
                                                 }
                                                 winBox.dragging = false
                                             }

@@ -99,7 +99,7 @@ PopupWindow {
                 visible: menu.entry !== null
                 icon: "window-new-symbolic"
                 label: "Nueva ventana"
-                onClicked: { menu.entry.execute(); menu.closeMenu() }
+                onClicked: { AppLauncher.launch(menu.entry); menu.closeMenu() }
             }
             ActionRow {
                 width: col.width
