@@ -1,3 +1,8 @@
+> **Heads up:** this is personal software. I am currently editing it for my own use, the way I
+> like to work.
+> The Credit goes to [lfreyes97/quickshell](https://github.com/lfreyes97/quickshell)
+> They were the one that built the original version of this. Please check them out.
+
 # QuickShell Config
 
 A GNOME‑inspired desktop shell for **Hyprland**, built with
