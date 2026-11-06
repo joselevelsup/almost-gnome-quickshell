@@ -1,8 +1,8 @@
 import QtQuick
 import ".."
 
-// Tile cuadrado con icono arriba y etiqueta abajo (gestor de ventanas).
-// `checkable` lo hace comportarse como toggle: encendido = acento.
+// Square tile with icon on top and label below (window manager).
+// `checkable` makes it behave as a toggle: on = accent.
 Rectangle {
     id: tile
     property string icon: ""

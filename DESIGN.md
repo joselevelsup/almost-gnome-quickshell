@@ -1,196 +1,205 @@
-# Política de diseño
+# Design policy
 
-Guía para mantener la shell visualmente coherente. Toda pieza nueva (popup,
-widget de la barra, componente) debe seguir estas reglas; si algo no encaja,
-se discute y se actualiza este documento antes de romperlas.
+Guide for keeping the shell visually consistent. Every new piece (popup, bar
+widget, component) must follow these rules; if something doesn't fit, discuss
+it and update this document before breaking them.
 
-## 1. Principios
+## 1. Principles
 
-1. **GNOME/libadwaita primero.** La referencia visual es GNOME Shell 46+:
-   superficies translúcidas, esquinas redondeadas, acento del sistema, iconos
-   simbólicos monocromos. Ante la duda, "¿cómo lo haría GNOME?".
-2. **El sistema manda.** Claro/oscuro y color de acento salen de gsettings
-   (`Theme.qml`) en vivo. Nunca fijar un esquema ni un acento en un componente.
-3. **Directo, no anidado.** Las acciones frecuentes van a un clic. Lo
-   destructivo o poco frecuente (apagar, reiniciar…) va detrás de un
-   despliegue, no en la vista principal.
-4. **El estado se ve.** Todo control que represente un estado (Wi-Fi, flotante,
-   fondo actual, workspace actual) lo muestra con el acento, y su texto
-   secundario dice el estado en palabras ("Apagado", "Sin conexión").
-5. **Pantalla chica.** La máquina de referencia es 1366×768. Ningún popup debe
-   pasar de ~620 px de alto; las listas largas se desplazan (`Flickable`).
+1. **Vanilla GNOME 50 first.** The visual reference is GNOME Shell 50, as close
+   to vanilla GNOME as possible: opaque surfaces, rounded corners, system
+   accent, monochrome symbolic icons. When in doubt, "how would GNOME do it?".
+   Don't add non-GNOME extras to the top bar.
+2. **The system decides the accent.** The shell is dark theme only; the accent
+   color follows gsettings (`org.gnome.desktop.interface accent-color`) live
+   via `Theme.qml`. Never hardcode an accent in a component.
+3. **Direct, not nested.** Frequent actions are one click away. Destructive or
+   infrequent ones (power off, restart…) go behind an expander, not in the
+   main view.
+4. **State is visible.** Every control that represents a state (Wi-Fi,
+   floating, current wallpaper, current workspace) shows it with the accent,
+   and its secondary text states it in words ("Off", "Disconnected").
+5. **Small screen.** The reference machine is 1366×768. No popup should exceed
+   ~620 px in height; long lists scroll (`Flickable`).
+
+### Top bar layout
+
+- **Left:** workspace indicator pill (opens the overview). No Activities label.
+- **Center:** clock (opens calendar/notifications).
+- **Right:** system tray, then status icons (open quick settings).
+
+User-facing options go in the Settings window (`SettingsWindow.qml`), stored in
+`Settings.options`; don't add one-off config files.
 
 ## 2. Tokens (`Theme.qml`)
 
-Los colores, radios y fuentes **solo** se toman de `Theme`. No se escriben
-colores hex en componentes, salvo las excepciones listadas abajo.
+Colors, radii and fonts are taken **only** from `Theme`. No hex colors in
+components, except for the exceptions listed below.
 
 ### Color
 
-| Token | Uso |
+| Token | Use |
 |---|---|
-| `fg` / `fgDim` | Texto e iconos principales / secundarios, etiquetas de sección |
-| `accent` / `accentHover` | Estado activo/seleccionado (relleno) y su hover |
-| `accentFg` | Texto e iconos sobre `accent` |
-| `danger` | Acciones destructivas (Apagar, Cerrar ventana) — solo en icono/texto |
-| `ok` | Confirmaciones/éxito |
-| `barBg` / `popupBg` / `toastBg` | Fondo de barra, popups y toasts |
-| `cardBg` / `cardHoverBg` | Superficie de tiles, botones y tarjetas **dentro** de un popup |
-| `hoverBg` | Hover de filas planas (`ActionRow`, segmentos inactivos) |
-| `activeBg` | Botón de la barra cuyo popup está abierto |
-| `trackBg` | Riel de sliders y switches apagados |
-| `border` | Borde de 1 px de popups y separadores |
+| `fg` / `fgDim` | Primary / secondary text and icons, section labels |
+| `accent` / `accentHover` | Active/selected state (fill) and its hover |
+| `accentFg` | Text and icons on `accent` |
+| `danger` | Destructive actions (Power off, Close window) — icon/text only |
+| `ok` | Confirmations/success |
+| `barBg` / `popupBg` / `toastBg` | Bar, popup and toast background |
+| `cardBg` / `cardHoverBg` | Surface of tiles, buttons and cards **inside** a popup |
+| `hoverBg` | Hover of flat rows (`ActionRow`, inactive segments) |
+| `activeBg` | Selected item inside the overview/popups (bar buttons use white, like GNOME) |
+| `trackBg` | Track of sliders and switches that are off |
+| `border` | 1 px border of popups and separators |
 
-Excepciones permitidas: `#ffffff` para knobs de slider/switch y texto sobre
-imágenes; `#000000` con alfa para degradados/oscurecido sobre imágenes
-(siempre vía `Theme.withAlpha`).
+Allowed exceptions: `#ffffff` for slider/switch knobs and text over images;
+`#000000` with alpha for gradients/dimming over images (always via
+`Theme.withAlpha`).
 
-La transparencia/blur se ajusta solo con `barAlpha` y `popupAlpha`; el blur
-real lo pone Hyprland.
+Sway has no blur, so surfaces are opaque, like vanilla GNOME: the top bar is
+solid black like GNOME, and popups use opaque Adwaita dark surfaces.
 
-> ⚠️ Ninguna propiedad puede empezar con `on` + mayúscula (`onAccent`): QML la
-> interpreta como manejador de señal y el singleton entero deja de cargar.
+> ⚠️ No property may start with `on` + uppercase (`onAccent`): QML interprets
+> it as a signal handler and the whole singleton fails to load.
 
-### Radios
+### Radii
 
-| Valor | Uso |
+| Value | Use |
 |---|---|
-| `Theme.radius` (14) | Tarjeta del popup |
-| `radius - 2` (12) | Tarjetas internas, tiles, vista previa |
-| `radius - 4` (10) | Botones de la barra |
-| `radius - 6` (8) | Filas, chips, miniaturas |
-| `height / 2` | Píldoras: quick toggles, `IconButton`, `SegmentedControl`, badges |
+| `Theme.radius` (18) | Popup card |
+| `radius - 2` (16) | Inner cards, tiles, preview |
+| `radius - 6` (12) | Rows, chips, thumbnails |
+| `height / 2` | Pills: bar buttons, quick toggles, `IconButton`, `SegmentedControl`, badges |
 
-### Tipografía
+### Typography
 
-Fuente `Theme.fontFamily` (Adwaita Sans); `monoFontFamily` solo para código o
-datos tabulares.
+Font `Theme.fontFamily` (Adwaita Sans); `monoFontFamily` only for code or
+tabular data.
 
-| Tamaño | Peso | Uso |
+| Size | Weight | Use |
 |---|---|---|
-| 13 | Bold | Título de popup |
-| 12 | DemiBold / Normal | Etiqueta principal de filas y toggles |
-| 11 | Normal | Valores (%, hora), segmentos, chips |
-| 10 | Normal | Subtítulo/estado, texto de ayuda |
-| 10 | DemiBold, MAYÚSCULAS, +0.6 tracking | `SectionLabel` |
+| 13 | Bold | Popup title |
+| 12 | DemiBold / Normal | Main label of rows and toggles |
+| 11 | Normal | Values (%, time), segments, chips |
+| 10 | Normal | Subtitle/state, help text |
+| 10 | DemiBold, UPPERCASE, +0.6 tracking | `SectionLabel` |
 
-Porcentajes y números que cambian usan cifras tabulares (`font.features: { "tnum": 1 }`).
+Percentages and changing numbers use tabular figures (`font.features: { "tnum": 1 }`).
 
-### Espaciado
+### Spacing
 
-- Padding interno de `PopupCard`: 12 px; separación entre bloques: 10 px.
-- Gaps de grillas: 8 px (toggles, miniaturas), 6 px (tiles, chips).
-- Icono ↔ texto en filas: 10 px. Márgenes laterales de filas: 10–16 px.
-- Separadores (`Rectangle` de 1 px con `Theme.border`) solo cuando agrupar con
-  tarjetas o `SectionLabel` no alcanza.
+- `PopupCard` inner padding: 12 px; spacing between blocks: 10 px.
+- Grid gaps: 8 px (toggles, thumbnails), 6 px (tiles, chips).
+- Icon ↔ text in rows: 10 px. Row side margins: 10–16 px.
+- Separators (1 px `Rectangle` with `Theme.border`) only when grouping with
+  cards or `SectionLabel` isn't enough.
 
-## 3. Componentes
+## 3. Components
 
-Usar el existente antes de crear uno nuevo. Si se crea uno, va en
-`components/`, con comentario de cabecera en español explicando qué es y dónde
-se usa.
+Use an existing one before creating a new one. If you create one, it goes in
+`components/`, with a header comment in English explaining what it is and
+where it's used.
 
-| Componente | Cuándo usarlo |
+| Component | When to use it |
 |---|---|
-| `PopupCard` | Base de todo popup anclado a la barra (`align`: left/center/right) |
-| `BarButton` | Cualquier botón de la barra; `active` cuando su popup está abierto |
-| `QuickToggle` | Encender/apagar una función del sistema (grilla de 2 columnas) |
-| `TileButton` | Acción o estado sobre un objeto (ventana); grilla de 3 columnas |
-| `IconButton` | Acción secundaria solo-icono en cabeceras; `checked` si despliega algo |
-| `SliderRow` | Valor continuo 0–1; el icono es clickeable (mute) y acepta rueda |
-| `SegmentedControl` | Elegir una opción entre 2–4 excluyentes |
-| `ChipButton` | Opción compacta en grilla (workspaces, flechas); `dot` = tiene contenido |
-| `ActionRow` | Ítem de menú con texto (menú de energía, acciones con etiqueta larga) |
-| `SectionLabel` | Encabezado de un grupo dentro de un popup |
-| `SymbolicIcon` | Todo icono monocromo; nunca `Image` directo para iconos |
+| `PopupCard` | Base of every popup anchored to the bar (`align`: left/center/right) |
+| `BarButton` | Any bar button; `active` when its popup is open |
+| `QuickToggle` | Turn a system feature on/off (2-column grid) |
+| `TileButton` | Action or state on an object (window); 3-column grid |
+| `IconButton` | Icon-only secondary action in headers; `checked` if it expands something |
+| `SliderRow` | Continuous 0–1 value; the icon is clickable (mute) and accepts the wheel |
+| `SegmentedControl` | Pick one option among 2–4 mutually exclusive ones |
+| `ChipButton` | Compact option in a grid (workspaces, arrows); `dot` = has content |
+| `ActionRow` | Menu item with text (power menu, actions with long labels) |
+| `SectionLabel` | Header of a group inside a popup |
+| `SymbolicIcon` | Every monochrome icon; never a direct `Image` for icons |
+| `SettingsRow` | A row in the Settings window: title/subtitle with the control on the right |
+| `TextField` | Single-line text entry; `committed` only fires for valid input |
 
-### Anatomía de un popup
+### Popup anatomy
 
 ```
 ┌ PopupCard ─────────────────────────┐
-│ Cabecera: título/contexto + IconButtons │
-│ (despliegue opcional)              │
-│ Contenido principal                │
+│ Header: title/context + IconButtons │
+│ (optional expander)                │
+│ Main content                       │
 │ SECTION LABEL                      │
-│ Controles agrupados                │
+│ Grouped controls                   │
 └────────────────────────────────────┘
 ```
 
-- La cabecera da contexto (qué ventana, cuántas imágenes, batería) y aloja
-  las acciones secundarias a la derecha.
-- Lo más usado arriba; lo destructivo al final o desplegable.
-- Estado vacío explícito: icono atenuado + una línea que diga qué hacer.
+- The header gives context (which window, how many images, battery) and holds
+  the secondary actions on the right.
+- Most used at the top; destructive at the end or in an expander.
+- Explicit empty state: dimmed icon + one line saying what to do.
 
-## 4. Estados e interacción
+## 4. States and interaction
 
-| Estado | Tratamiento |
+| State | Treatment |
 |---|---|
-| Normal | `cardBg` (o transparente en filas planas) |
-| Hover | `cardHoverBg` / `hoverBg`; `accentHover` si está activo |
-| Presionado | `scale` 0.94–0.97, 90 ms `OutCubic` |
-| Activo / seleccionado | Relleno `accent`, contenido `accentFg`, peso DemiBold |
-| Deshabilitado | `opacity: 0.4`; se deshabilita, no se oculta, si el usuario debe saber que existe |
-| Destructivo | Icono/texto `danger`, nunca relleno rojo |
+| Normal | `cardBg` (or transparent in flat rows) |
+| Hover | `cardHoverBg` / `hoverBg`; `accentHover` if active |
+| Pressed | `scale` 0.94–0.97, 90 ms `OutCubic` |
+| Active / selected | `accent` fill, `accentFg` content, DemiBold weight |
+| Disabled | `opacity: 0.4`; disable, don't hide, if the user should know it exists |
+| Destructive | `danger` icon/text, never a red fill |
 
-- Todo elemento clickeable lleva `cursorShape: Qt.PointingHandCursor`.
-- Los controles son **controlados**: emiten `toggled(value)`/`clicked()` y no
-  pisan su propio `checked`; el valor real vuelve por binding desde el
-  servicio (Networking, Bluetooth, Hyprland…).
-- Después de una acción sobre Hyprland se refresca el estado (~150 ms) para
-  que la UI refleje la realidad y no una suposición.
-- Al cerrarse un popup se resetean sus estados transitorios (despliegues,
-  hover).
-- Para hover sobre áreas con hijos interactivos, `HoverHandler` en vez de
+- Every clickable element gets `cursorShape: Qt.PointingHandCursor`.
+- Controls are **controlled**: they emit `toggled(value)`/`clicked()` and don't
+  overwrite their own `checked`; the real value comes back by binding from the
+  service (Networking, Bluetooth, Sway…).
+- After an action on Sway, let `Sway.qml` refresh from its IPC events so the UI reflects reality
+  and not an assumption.
+- When a popup closes, reset its transient states (expanders, hover).
+- For hover over areas with interactive children, use `HoverHandler` instead of
   `MouseArea`.
 
-## 5. Movimiento
+## 5. Motion
 
-| Qué | Duración | Curva |
+| What | Duration | Curve |
 |---|---|---|
-| Hover / cambio de color | 100–120 ms | lineal |
-| Opacidad (habilitar, cargar imagen) | 100–150 ms | lineal |
-| Presión (scale) | 90 ms | `OutCubic` |
+| Hover / color change | 100–120 ms | linear |
+| Opacity (enable, image load) | 100–150 ms | linear |
+| Press (scale) | 90 ms | `OutCubic` |
 | Switch / knob | 140 ms | `OutCubic` |
-| Despliegue (altura) | 160 ms | `OutCubic` |
-| Apertura de popup | 140 ms fade + 180 ms desliz. 6 px | `OutCubic` |
+| Expand (height) | 160 ms | `OutCubic` |
+| Popup open | 140 ms fade + 180 ms 6 px slide | `OutCubic` |
 
-Nada supera 200 ms. Sin rebotes ni animaciones de cierre que retrasen la
-interacción.
+Nothing exceeds 200 ms. No bounces or close animations that delay
+interaction.
 
-## 6. Iconos
+## 6. Icons
 
-- Tema activo: **Phosphor** (`//@ pragma IconTheme Phosphor`), que hereda de
-  **Adwaita** para los nombres que no mapea.
-- Usar nombres freedesktop `*-symbolic`. Antes de usar uno nuevo, verificar que
-  exista en alguno de los dos temas:
+- Active theme: **Adwaita** (`//@ pragma IconTheme Adwaita`), as in GNOME.
+- Use freedesktop `*-symbolic` names. Before using a new one, check that it
+  exists in Adwaita:
   ```sh
-  find -L /etc/profiles/per-user/$USER/share/icons/{Phosphor,Adwaita} -name 'NOMBRE-symbolic.svg'
+  find /usr/share/icons/Adwaita -name 'NAME-symbolic.svg'
   ```
-- Cuidado con iconos de barra de título de Adwaita (`window-maximize`,
-  `window-restore`): se dibujan diminutos. Preferir alternativas
-  (`zoom-fit-best`, `focus-windows`).
-- Iconos propios: SVG simbólico en `assets/`, pasado por `iconSource`.
-- Tamaños: 15 px (barra, por defecto), 16 px (quick toggles), 18 px (tiles),
-  11–14 px (badges, chips), 32 px (estados vacíos).
+- Beware of Adwaita title bar icons (`window-maximize`, `window-restore`): they
+  render tiny. Prefer alternatives (`zoom-fit-best`, `focus-windows`).
+- Custom icons: symbolic SVG in `assets/`, passed via `iconSource`.
+- Sizes: 16 px (bar, default), 16 px (quick toggles), 18 px (tiles),
+  11–14 px (badges, chips), 32 px (empty states).
 
-## 7. Texto
+## 7. Text
 
-- Interfaz en **español**, en minúscula de oración ("Cerrar sesión", no
-  "Cerrar Sesión").
-- Etiquetas cortas (1–2 palabras); el detalle va en el subtítulo.
-- El subtítulo describe el estado, no repite la etiqueta.
-- Textos que pueden desbordar llevan `elide: Text.ElideRight`.
-- Comentarios del código también en español, explicando el *por qué*.
+- UI in **English**. Use GNOME Shell's own wording and capitalization where an
+  equivalent exists ("Log Out", "Do Not Disturb", "Pin to Dash"); otherwise
+  sentence case for hints and subtitles.
+- Short labels (1–2 words); details go in the subtitle.
+- The subtitle describes the state, it doesn't repeat the label.
+- Text that may overflow gets `elide: Text.ElideRight`.
+- Code comments also in English, explaining the *why*.
 
-## 8. Verificación
+## 8. Verification
 
-Antes de dar por terminado un cambio visual:
+Before considering a visual change done:
 
-1. Cargar la config sin errores: `qs -p .` y revisar el log (ignorar el aviso
-   de zona horaria y el del servidor de notificaciones duplicado).
-2. Revisar el popup en **oscuro y claro**, y con el acento cambiado.
-3. Comprobar que entra en 1366×768 y que los estados vacío/deshabilitado se
-   ven bien.
-4. Para capturar un popup sin clickear: copiar la config a un directorio
-   temporal, inicializar `PopupManager.current` con el nombre del popup,
-   lanzarla con `timeout` y tomar la captura con `grim`.
+1. Load the config without errors: `qs -p .` and check the log (ignore the
+   time zone warning and the duplicate notification server one).
+2. Check the popup with a different accent color.
+3. Check that it fits in 1366×768 and that empty/disabled states look right.
+4. To capture a popup without clicking: copy the config to a temporary
+   directory, initialize `PopupManager.current` with the popup's name, launch
+   it with `timeout` and take the screenshot with `grim`.

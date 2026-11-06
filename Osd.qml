@@ -4,11 +4,11 @@ import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
 
-// Estado del OSD (indicador en pantalla) de volumen y brillo, como el de
-// GNOME. No escucha teclas: vigila los valores reales (Pipewire y sysfs),
-// así que aparece igual si el cambio viene de las teclas multimedia de
-// hyprland.lua, de wpctl/brightnessctl en una terminal o de otra app.
-// Lo dibuja components/OsdPopup.qml.
+// State of the volume and brightness OSD (on-screen display), like GNOME's.
+// It doesn't listen for keys: it watches the real values (Pipewire and
+// sysfs), so it shows up whether the change comes from the compositor's
+// media keys, wpctl/light in a terminal or another app.
+// Drawn by components/OsdPopup.qml.
 QtObject {
     id: osd
 
@@ -18,7 +18,7 @@ QtObject {
     property bool muted: false
     property bool shown: false
 
-    // Los primeros valores al arrancar la shell no son cambios del usuario.
+    // The first values at shell startup aren't user changes.
     property bool ready: false
     property Timer readyTimer: Timer { interval: 1500; running: true; onTriggered: osd.ready = true }
     property Timer hideTimer: Timer { interval: 1500; onTriggered: osd.shown = false }
@@ -27,13 +27,13 @@ QtObject {
         osd.kind = kind
         osd.value = value
         osd.muted = muted
-        // Con los ajustes rápidos abiertos el slider ya muestra el valor.
+        // With Quick Settings open, the slider already shows the value.
         if (!osd.ready || PopupManager.current === "quicksettings") return
         osd.shown = true
         osd.hideTimer.restart()
     }
 
-    // ---- Volumen ----
+    // ---- Volume ----
     readonly property var sink: Pipewire.defaultAudioSink
     property PwObjectTracker tracker: PwObjectTracker { objects: osd.sink ? [osd.sink] : [] }
     property Connections audioWatch: Connections {
@@ -42,9 +42,9 @@ QtObject {
         function onMutedChanged() { osd.show("volume", osd.sink.audio.volume, osd.sink.audio.muted) }
     }
 
-    // ---- Brillo ----
-    // Escribir el archivo de sysfs (brightnessctl) dispara inotify, así que
-    // FileView con watchChanges alcanza; no hace falta sondear.
+    // ---- Brightness ----
+    // Writing the sysfs file (light) triggers inotify, so FileView
+    // with watchChanges is enough; no polling needed.
     property string backlight: ""
     property real maxBrightness: 0
     property Process findBacklight: Process {

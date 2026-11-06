@@ -4,9 +4,8 @@ import Quickshell.Widgets
 import QtQuick
 import ".."
 
-// Selector de ventanas estilo Alt+Tab: aparece mientras se mantiene ALT
-// (hypr/modules/binds.lua), en orden de uso más reciente; confirma al
-// soltar ALT. Estado en Switcher.qml.
+// Alt+Tab window switcher: shown while Alt is held, most recently used
+// first; confirms when Alt is released. State lives in Switcher.qml.
 PanelWindow {
     id: root
     WlrLayershell.namespace: "quickshell:popup:alttab"
@@ -53,7 +52,7 @@ PanelWindow {
                         spacing: 6
                         IconImage {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            source: Quickshell.iconPath(tile.modelData.class, false)
+                            source: Quickshell.iconPath(tile.modelData.appId, false)
                             implicitSize: 40
                             visible: status === Image.Ready
                         }

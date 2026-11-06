@@ -1,4 +1,4 @@
-//@ pragma IconTheme Phosphor
+//@ pragma IconTheme Adwaita
 import Quickshell
 import QtQuick
 import "components"
@@ -6,8 +6,7 @@ import "components"
 Scope {
     id: root
 
-    // Restaura el fondo de pantalla guardado al iniciar la shell.
-    Component.onCompleted: Wallpaper.restore()
+    SettingsWindow {}
 
     Variants {
         model: Quickshell.screens

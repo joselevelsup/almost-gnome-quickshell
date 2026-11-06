@@ -5,14 +5,14 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Tarjeta de reproducción (MPRIS) del panel de calendario, como la de
-// GNOME: carátula, título, artista y controles. Muestra el reproductor
-// que está sonando; si ninguno suena, el primero. Con varios, las flechas
-// pequeñas de la cabecera permiten cambiar entre ellos.
+// Media playback (MPRIS) card in the calendar panel, like GNOME's: cover
+// art, title, artist and controls. Shows the player that's playing; if none
+// is, the first one. With several, the small arrows in the header switch
+// between them.
 Rectangle {
     id: root
     readonly property var players: Mpris.players.values
-    // Índice elegido a mano; -1 = automático (el que esté sonando).
+    // Manually chosen index; -1 = automatic (whichever is playing).
     property int manualIndex: -1
     readonly property var player: {
         if (players.length === 0) return null
@@ -35,7 +35,7 @@ Rectangle {
         anchors.margins: 10
         spacing: 10
 
-        // ---- Carátula ----
+        // ---- Cover art ----
         ClippingRectangle {
             Layout.preferredWidth: 64
             Layout.preferredHeight: 64
@@ -62,7 +62,7 @@ Rectangle {
             }
         }
 
-        // ---- Texto + controles ----
+        // ---- Text + controls ----
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -74,14 +74,14 @@ Rectangle {
 
                 Text {
                     Layout.fillWidth: true
-                    text: root.player ? (root.player.identity || "Reproductor") : ""
+                    text: root.player ? (root.player.identity || "Player") : ""
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
                     font.pixelSize: 10
                     elide: Text.ElideRight
                 }
                 Repeater {
-                    // Solo si hay más de un reproductor.
+                    // Only if there's more than one player.
                     model: root.players.length > 1 ? ["pan-start-symbolic", "pan-end-symbolic"] : []
                     delegate: IconButton {
                         required property string modelData
@@ -98,7 +98,7 @@ Rectangle {
             }
             Text {
                 Layout.fillWidth: true
-                text: root.player ? (root.player.trackTitle || "Sin título") : ""
+                text: root.player ? (root.player.trackTitle || "Unknown title") : ""
                 color: Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: 12

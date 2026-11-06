@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Fila clickeable con icono + etiqueta, para menús (energía, configuración...).
+// Clickable row with icon + label, for menus (power, settings...).
 Item {
     id: root
     property string icon: ""

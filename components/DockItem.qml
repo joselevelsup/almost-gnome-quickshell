@@ -3,14 +3,14 @@ import Quickshell.Widgets
 import QtQuick
 import ".."
 
-// Icono de una app en el Dock: icono grande, puntos de ventanas abiertas
-// debajo (hasta 3; el primero alargado y con acento si la app tiene el
-// foco). Solo emite señales; la lógica vive en Dock.qml.
+// App icon in the Dock: large icon with open-window dots below (up to 3;
+// the first one elongated and accented when the app has focus). Only
+// emits signals; the logic lives in Dock.qml.
 Item {
     id: item
     // { key, entry, appId, windows: [Toplevel], pinned }
     property var app
-    // Resaltado mientras su menú contextual está abierto.
+    // Highlighted while its context menu is open.
     property bool highlighted: false
     readonly property string tipText: app.entry ? app.entry.name : app.appId
     readonly property bool focused: app.windows.some(w => w.activated)
@@ -20,8 +20,9 @@ Item {
     signal newWindow
     signal menuRequested
 
-    width: 52
-    height: 52
+    property int size: 52
+    width: size
+    height: size
 
     Rectangle {
         anchors.fill: parent
@@ -33,7 +34,7 @@ Item {
     IconImage {
         anchors.centerIn: parent
         anchors.verticalCenterOffset: -3
-        implicitSize: 36
+        implicitSize: Math.round(item.size * 0.7)
         source: Quickshell.iconPath(item.app.entry ? item.app.entry.icon : item.app.appId, "application-x-executable")
         scale: mouse.pressed ? 0.94 : 1
         Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }

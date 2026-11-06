@@ -1,9 +1,9 @@
 import QtQuick
 import ".."
 
-// Botón circular solo-icono (cabecera de Quick Settings, acciones de los
-// popups). `checked` lo pinta con el acento; `tint` colorea el icono
-// (p. ej. Theme.danger para acciones destructivas).
+// Round icon-only button (Quick Settings header, popup actions).
+// `checked` paints it with the accent; `tint` colors the icon
+// (e.g. Theme.danger for destructive actions).
 Rectangle {
     id: btn
     property string icon: ""

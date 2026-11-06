@@ -1,39 +1,30 @@
-import Quickshell.Hyprland
+import Quickshell.I3
 import QtQuick
 import ".."
 
-// Puntitos de workspace de Hyprland, junto al botón de Actividades.
-// GNOME no los muestra por defecto, pero Hyprland no tiene "Overview"
-// nativo, así que esto sustituye esa función.
-Row {
+// GNOME 50 workspace indicator: the top-left pill of dots (the active
+// workspace is a wider dash). Clicking it opens the overview, like the
+// old Activities button.
+BarButton {
     id: root
-    spacing: 6
-    property var wsList: Hyprland.workspaces.values
+    active: PopupManager.current === "overview"
+    spacing: 5
 
     Repeater {
-        model: root.wsList
+        model: I3.workspaces.values.filter(w => w.name !== "__i3_scratch")
+            .sort((a, b) => (a.number - b.number) || a.name.localeCompare(b.name))
         delegate: Rectangle {
-            id: dot
             required property var modelData
-            width: modelData.active ? 16 : 8
-            height: 8
-            radius: 4
-            color: modelData.active ? Theme.accent : Theme.fgDim
-            opacity: modelData.active ? 1.0 : 0.6
             anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+            width: modelData.active ? 30 : 7
+            height: 7
+            radius: height / 2
+            color: Theme.fg
+            opacity: modelData.active ? 1.0 : 0.5
 
-            Behavior on width { NumberAnimation { duration: 120 } }
-            Behavior on color { ColorAnimation { duration: 120 } }
-
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -4
-                // Este Hyprland usa config en Lua: el socket de "dispatch"
-                // evalúa el string como código Lua (hl.dispatch(<string>)),
-                // no como el clásico "dispatcher arg" — por eso hl.dsp.focus
-                // en vez de simplemente "workspace <id>".
-                onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = " + dot.modelData.id + " })")
-            }
+            Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         }
     }
+
+    onClicked: PopupManager.open("overview")
 }

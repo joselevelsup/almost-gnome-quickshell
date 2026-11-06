@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Quick toggle tipo "píldora" de GNOME 46: icono + título + estado. Encendido
-// se pinta con el acento; apagado, con la superficie neutra del popup.
+// GNOME 46 style "pill" quick toggle: icon + title + status. On is painted
+// with the accent; off, with the popup's neutral surface.
 Rectangle {
     id: root
     property string icon: ""

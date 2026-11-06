@@ -1,7 +1,7 @@
 import QtQuick
 import ".."
 
-// Interruptor deslizante estilo GNOME/libadwaita.
+// GNOME/libadwaita style toggle switch.
 Rectangle {
     id: sw
     property bool checked: false
@@ -29,10 +29,10 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        // No mutamos sw.checked aquí: es un componente "controlado", su valor
-        // real llega desde afuera. Si lo pisamos localmente, se rompe el
-        // binding con el estado real (Wi-Fi/Bluetooth/DND) y el switch queda
-        // desincronizado después del primer click.
+        // Don't mutate sw.checked here: this is a "controlled" component, its
+        // real value comes from outside. Setting it locally breaks the binding
+        // to the real state (Wi-Fi/Bluetooth/DND) and the switch goes out of
+        // sync after the first click.
         onClicked: sw.toggled(!sw.checked)
     }
 }

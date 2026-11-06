@@ -3,8 +3,8 @@ import Quickshell.Wayland
 import QtQuick
 import ".."
 
-// Capa invisible de pantalla completa: cierra cualquier popup abierto
-// al hacer click fuera de él, como en GNOME Shell.
+// Invisible fullscreen layer: closes any open popup when clicking
+// outside it, like GNOME Shell.
 PanelWindow {
     id: dismiss
     WlrLayershell.namespace: "quickshell:dismiss"

@@ -3,16 +3,15 @@ import Quickshell.Wayland
 import QtQuick
 import ".."
 
-// Píldora de volumen/brillo abajo al centro, como el OSD de GNOME.
-// Aparece al cambiar el valor y se va sola (estado en Osd.qml). No recibe
-// clicks: es solo indicador.
+// Volume/brightness pill at the bottom center, like GNOME's OSD.
+// Appears when the value changes and hides itself (state in Osd.qml).
+// Doesn't take clicks: indicator only.
 PanelWindow {
     id: root
-    // Comparte la regla de blur de los toasts en hyprland.lua.
     WlrLayershell.namespace: "quickshell:toast"
     WlrLayershell.layer: WlrLayer.Overlay
     anchors.bottom: true
-    // Por encima del dock (64 px + 8 de margen) cuando está visible.
+    // Above the dock (64 px + 8 margin) when it is visible.
     margins.bottom: 88
     exclusiveZone: 0
     focusable: false
@@ -20,7 +19,7 @@ PanelWindow {
     mask: Region {}
     implicitWidth: 300
     implicitHeight: 48
-    // Se mantiene visible durante el fade de salida.
+    // Stays visible during the fade-out.
     visible: Osd.shown || pill.opacity > 0
 
     readonly property bool overAmp: Osd.kind === "volume" && Osd.value > 1.0
@@ -62,8 +61,8 @@ PanelWindow {
             font.features: { "tnum": 1 }
         }
 
-        // Riel: con volumen sobre 100 % la escala pasa a 0–150 % (el tope de
-        // wpctl -l 1.5) y una marca indica dónde está el 100 %.
+        // Track: with volume over 100% the scale becomes 0–150% (the
+        // wpctl -l 1.5 cap) and a tick marks where 100% is.
         Rectangle {
             id: track
             anchors { left: icon.right; right: pct.left; leftMargin: 14; rightMargin: 12; verticalCenter: parent.verticalCenter }

@@ -3,20 +3,20 @@ import Quickshell.Wayland
 import QtQuick
 import ".."
 
-// Base para los popups flotantes de la barra (calendario, quick settings):
-// tarjeta redondeada y translúcida, anclada bajo la barra.
+// Base for the bar's floating popups (calendar, quick settings):
+// rounded, translucent card anchored below the bar.
 PanelWindow {
     id: popup
     property string popupName: ""
-    // "left" (bajo Actividades), "right" (bajo el status pill) o "center" (bajo el reloj)
+    // "left" (below the workspace indicator), "right" (below the status pill) or "center" (below the clock)
     property string align: "right"
     property int cardWidth: 300
     default property alias content: column.data
 
     WlrLayershell.namespace: "quickshell:popup:" + popup.popupName
-    // Por encima de la capa que cierra los popups: si no, ambas superficies
-    // quedan al mismo nivel y los clicks pueden ir a la de abajo en vez de
-    // llegar a los controles del popup.
+    // Above the dismiss layer: otherwise both surfaces sit on the same
+    // layer and clicks can go to the one below instead of reaching the
+    // popup's controls.
     WlrLayershell.layer: WlrLayer.Overlay
     visible: PopupManager.current === popup.popupName
     color: "transparent"
@@ -37,7 +37,7 @@ PanelWindow {
     implicitWidth: popup.cardWidth
     implicitHeight: column.implicitHeight + 24
 
-    // Entrada suave (fade + leve deslizamiento) cada vez que se abre.
+    // Smooth entrance (fade + slight slide) every time it opens.
     onVisibleChanged: if (popup.visible) openAnim.restart()
     ParallelAnimation {
         id: openAnim

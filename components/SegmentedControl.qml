@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Selector segmentado (una opción activa entre varias), estilo libadwaita.
-// model: [{ label: "Dwindle", value: "dwindle" }, ...]
+// Segmented selector (one active option among several), libadwaita style.
+// model: [{ label: "Tabbed", value: "tabbed" }, ...]
 Rectangle {
     id: root
     property var model: []

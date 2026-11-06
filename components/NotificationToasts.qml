@@ -3,7 +3,7 @@ import Quickshell.Wayland
 import QtQuick
 import ".."
 
-// Banners de notificación emergentes, centrados bajo la barra como en GNOME.
+// Pop-up notification banners, centered below the bar like in GNOME.
 PanelWindow {
     id: toasts
     WlrLayershell.namespace: "quickshell:toast"
@@ -15,9 +15,9 @@ PanelWindow {
     focusable: false
     color: "transparent"
 
-    // Separación respecto a la barra. Ojo: forma parte del alto total de la
-    // superficie, así que debe sumarse al implicitHeight o la tarjeta
-    // (colocada con este margen) queda recortada por el borde inferior.
+    // Gap below the bar. Note: it is part of the surface's total height, so
+    // it must be added to implicitHeight or the card (placed with this
+    // margin) gets clipped at the bottom edge.
     readonly property int toastTopMargin: 40
 
     implicitWidth: 300
@@ -47,8 +47,8 @@ PanelWindow {
                     if (toast.modelData && toast.modelData.dismiss) toast.modelData.dismiss()
                 }
 
-                // Mientras el puntero está encima se pausa el auto-cierre,
-                // para poder leer la notificación con calma.
+                // Auto-dismiss pauses while hovered, so the notification
+                // can be read calmly.
                 HoverHandler { id: toastHover }
 
                 Timer {

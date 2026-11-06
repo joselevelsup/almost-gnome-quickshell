@@ -4,8 +4,8 @@ import Quickshell.Services.SystemTray
 import QtQuick
 import ".."
 
-// Bandeja de sistema (iconos de apps en segundo plano). El click izquierdo
-// activa el ítem; el menú contextual (click derecho) no está implementado.
+// System tray (background app icons). Left click activates the item;
+// the context menu (right click) is not implemented.
 Row {
     id: tray
     spacing: 2

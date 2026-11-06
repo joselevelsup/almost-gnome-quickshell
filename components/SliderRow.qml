@@ -2,15 +2,15 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Fila de slider estilo GNOME Quick Settings: icono (clickeable, p. ej.
-// para silenciar) + barra arrastrable que también responde a la rueda.
+// GNOME Quick Settings style slider row: icon (clickable, e.g. to mute)
+// + draggable bar that also responds to the scroll wheel.
 Item {
     id: root
     property string icon: ""
     property real value: 0 // 0..1
     property bool muted: false
     property bool showValue: true
-    // Flecha al final para desplegar algo debajo (p. ej. salidas de audio).
+    // Trailing arrow to expand something below (e.g. audio outputs).
     property bool expandable: false
     property bool expanded: false
     signal valueEdited(real v)

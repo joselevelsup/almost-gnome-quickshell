@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Una notificación individual: usada tanto en el historial (calendario)
-// como en los banners emergentes (NotificationToasts).
+// A single notification: used both in the history (calendar) and in the
+// pop-up banners (NotificationToasts).
 Item {
     id: root
     property string appName: ""
@@ -12,9 +12,9 @@ Item {
     property string appIcon: ""
     property string image: ""
     property var time: null
-    // true cuando la fila se usa como toast: flota sola y necesita tarjeta
-    // propia; en el historial del calendario ya hay popup detrás y basta
-    // el tinte sutil que separa filas.
+    // true when used as a toast: it floats alone and needs its own card; in
+    // the calendar history there's already a popup behind it, so the
+    // subtle row tint is enough.
     property bool elevated: false
     signal dismissRequested
 
@@ -25,7 +25,7 @@ Item {
         anchors.fill: parent
         radius: Theme.radius - 6
         color: root.elevated ? Theme.toastBg
-                             : Theme.withAlpha(Theme.dark ? "#ffffff" : "#000000", Theme.dark ? 0.06 : 0.04)
+                             : Theme.withAlpha("#ffffff", 0.06)
         border.width: root.elevated ? 1 : 0
         border.color: Theme.border
     }

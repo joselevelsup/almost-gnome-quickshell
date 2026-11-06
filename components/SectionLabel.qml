@@ -1,7 +1,7 @@
 import QtQuick
 import ".."
 
-// Encabezado chico de sección dentro de un popup.
+// Small section heading inside a popup.
 Text {
     leftPadding: 4
     color: Theme.fgDim

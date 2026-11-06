@@ -1,26 +1,24 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Quickshell.I3
 import Quickshell.Widgets
-import Quickshell.Io
 import QtQuick
 import QtQuick.Effects
 import ".."
 
-// Overview estilo GNOME Activities / Mission Control: mosaico con todos
-// los workspaces sobre el fondo de pantalla desenfocado. Cada tarjeta
-// muestra el wallpaper y sus ventanas (posición y tamaño reales, escalados)
-// como icono + título.
-// Click en una ventana la enfoca; click en la tarjeta cambia de workspace;
-// arrastrar una ventana la mueve a otro workspace (o a uno nuevo, con la
-// tarjeta "+") sin perder el foco actual. Escribir busca aplicaciones
-// (Enter abre la elegida). Esc limpia la búsqueda o cierra.
-// Se abre desde la barra o por IPC: `qs ipc call overview toggle`.
+// GNOME Activities-style overview: a mosaic of every workspace over the
+// blurred wallpaper. Each card shows the wallpaper and its windows (real
+// position and size, scaled) as icon + title.
+// Click a window to focus it; click a card to switch workspace; drag a
+// window onto another card (or the "+" card for a new workspace) to move it
+// without losing the current focus. Typing searches applications (Enter
+// launches the selected one). Esc clears the search or closes.
+// Opens from the workspace indicator or over IPC: `qs ipc call overview toggle`.
 PanelWindow {
     id: overview
     WlrLayershell.namespace: "quickshell:popup:overview"
     WlrLayershell.layer: WlrLayer.Overlay
-    // Teclado exclusivo solo mientras está abierto, para Esc y 1–9.
+    // Exclusive keyboard only while open, for Esc and search.
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     visible: PopupManager.current === "overview"
     anchors { top: true; left: true; right: true; bottom: true }
@@ -28,19 +26,19 @@ PanelWindow {
     aboveWindows: true
     color: "transparent"
 
-    property var clients: []
-    property string activeAddress: ""
-    property var wsList: Hyprland.workspaces.values.filter(w => w.id > 0)
-    // Workspace bajo el puntero mientras se arrastra una ventana (-1: ninguno).
-    property int dropTarget: -1
+    readonly property var clients: Sway.windows
+    readonly property var wsList: I3.workspaces.values.filter(w => w.name !== "__i3_scratch")
+        .sort((a, b) => (a.number - b.number) || a.name.localeCompare(b.name))
+    // Workspace name under the pointer while dragging a window ("" = none).
+    property string dropTarget: ""
 
-    // ---- Búsqueda de aplicaciones ----
-    // Como en GNOME: con el overview abierto, escribir busca apps; el
-    // mosaico se reemplaza por los resultados.
+    // ---- App search ----
+    // As in GNOME: with the overview open, typing searches apps and the
+    // mosaic is replaced by the results.
     property string query: ""
     property int selIndex: 0
-    // Grilla de aplicaciones (esquina caliente inferior izquierda): con el
-    // campo vacío se listan todas las apps en vez del mosaico de workspaces.
+    // App grid (bottom-left hot corner): with an empty query every app is
+    // listed instead of the workspace mosaic.
     readonly property bool appGrid: overview.visible && PopupManager.appsMode
     readonly property bool searching: query.trim().length > 0 || overview.appGrid
     readonly property int resultCols: 6
@@ -79,11 +77,11 @@ PanelWindow {
         if (results.length === 0) return
         selIndex = Math.max(0, Math.min(results.length - 1, selIndex + delta))
     }
-    readonly property int nextFreeId: wsList.reduce((m, w) => Math.max(m, w.id), 0) + 1
+    readonly property string nextFreeName: String(wsList.reduce((m, w) => Math.max(m, w.number), 0) + 1)
 
-    // ---- Geometría del mosaico ----
-    // Se busca la cantidad de columnas que da las tarjetas más grandes sin
-    // salirse de la pantalla (referencia 1366×768).
+    // ---- Mosaic geometry ----
+    // Pick the column count that gives the largest cards that still fit on
+    // screen (reference 1366×768).
     readonly property real aspect: width > 0 && height > 0 ? width / height : 16 / 9
     readonly property int gap: 24
     readonly property int labelH: 26
@@ -98,43 +96,37 @@ PanelWindow {
                              (availH - rows * labelH - (rows - 1) * gap) / rows * aspect)
             if (w > best.w) best = { cols: cols, w: w }
         }
-        // Con uno o dos workspaces no conviene que la tarjeta ocupe toda la pantalla.
+        // With one or two workspaces a card shouldn't fill the whole screen.
         best.w = Math.floor(Math.min(best.w, availW * 0.42))
         return best
     }
     readonly property real cardW: layout.w
     readonly property real cardH: Math.round(cardW / aspect)
 
-    function refresh() { clientsProc.running = true; activeProc.running = true }
-    // El overview tiene teclado exclusivo: al cerrarse, Hyprland devuelve el
-    // foco a la ventana enfocada antes y con ella al workspace de origen,
-    // pisando cualquier focus despachado mientras seguía abierto. Por eso
-    // primero se cierra y el focus se despacha después de que se desmapea.
+    // The overview grabs the keyboard: when it closes, the compositor gives
+    // focus back to the previously focused window, overriding any focus
+    // command sent while it was open. So close first and send the command
+    // after the surface is unmapped.
     property string pendingFocus: ""
-    function closeThenDispatch(dispatcher) {
-        overview.pendingFocus = dispatcher
+    function closeThenDispatch(command) {
+        overview.pendingFocus = command
         PopupManager.close()
     }
     Timer {
         id: pendingFocusTimer
         interval: 60
         onTriggered: {
-            if (overview.pendingFocus !== "") Hyprland.dispatch(overview.pendingFocus)
+            if (overview.pendingFocus !== "") I3.dispatch(overview.pendingFocus)
             overview.pendingFocus = ""
         }
     }
-    function focusWorkspace(id) {
-        overview.closeThenDispatch("hl.dsp.focus({ workspace = " + id + " })")
-    }
-    function moveWindow(address, wsId) {
-        Hyprland.dispatch("hl.dsp.window.move({ workspace = " + wsId +
-            ", window = \"address:" + address + "\", follow = false })")
-        refreshLater.restart()
+    function focusWorkspace(name) {
+        overview.closeThenDispatch(Sway.workspaceCmd(name))
     }
     function cardAt(px, py) {
         for (var i = 0; i < grid.children.length; i++) {
             var c = grid.children[i]
-            if (c.targetId === undefined) continue
+            if (c.targetName === undefined) continue
             var p = c.mapToItem(backdrop, 0, 0)
             if (px >= p.x && px <= p.x + c.width && py >= p.y && py <= p.y + c.height) return c
         }
@@ -143,38 +135,16 @@ PanelWindow {
 
     onVisibleChanged: {
         if (visible) {
-            refresh()
+            Sway.refresh()
             content.opacity = 0
             content.scale = 0.97
             openAnim.restart()
             searchInput.forceActiveFocus()
         } else {
-            dropTarget = -1
+            dropTarget = ""
             ghost.visible = false
             query = ""
             if (pendingFocus !== "") pendingFocusTimer.restart()
-        }
-    }
-    Timer { interval: 1000; running: overview.visible; repeat: true; onTriggered: overview.refresh() }
-    // Tras una acción sobre Hyprland se relee el estado real.
-    Timer { id: refreshLater; interval: 150; onTriggered: overview.refresh() }
-
-    Process {
-        id: clientsProc
-        command: ["hyprctl", "clients", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try { overview.clients = JSON.parse(text) } catch (e) { overview.clients = [] }
-            }
-        }
-    }
-    Process {
-        id: activeProc
-        command: ["hyprctl", "activewindow", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try { overview.activeAddress = JSON.parse(text).address || "" } catch (e) { overview.activeAddress = "" }
-            }
         }
     }
 
@@ -182,7 +152,7 @@ PanelWindow {
         id: backdrop
         anchors.fill: parent
 
-        // ---- Fondo: wallpaper desenfocado y atenuado, como GNOME ----
+        // ---- Background: blurred, dimmed wallpaper, like GNOME ----
         Rectangle {
             anchors.fill: parent
             color: Theme.withAlpha("#000000", 1)
@@ -205,10 +175,10 @@ PanelWindow {
             blur: 1.0
             blurMax: 48
         }
-        // El tinte sigue el esquema para que fg/fgDim se lean sobre cualquier fondo.
+        // Dark tint so fg/fgDim stay readable over any wallpaper.
         Rectangle {
             anchors.fill: parent
-            color: Theme.dark ? Theme.withAlpha("#000000", 0.55) : Theme.withAlpha("#ffffff", 0.62)
+            color: Theme.withAlpha("#000000", 0.55)
         }
 
         MouseArea { anchors.fill: parent; onClicked: PopupManager.close() }
@@ -224,7 +194,7 @@ PanelWindow {
                 NumberAnimation { target: content; property: "scale"; to: 1; duration: 180; easing.type: Easing.OutCubic }
             }
 
-            // ---- Cabecera: buscador ----
+            // ---- Header: search field ----
             Column {
                 anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 20 }
                 spacing: 6
@@ -238,7 +208,7 @@ PanelWindow {
                     border.color: overview.searching ? Theme.accent : Theme.border
                     Behavior on border.color { ColorAnimation { duration: 100 } }
 
-                    // Click en el campo no debe cerrar el overview.
+                    // Clicking the field must not close the overview.
                     MouseArea { anchors.fill: parent; cursorShape: Qt.IBeamCursor; onClicked: searchInput.forceActiveFocus() }
 
                     SymbolicIcon {
@@ -264,8 +234,8 @@ PanelWindow {
                         Keys.onPressed: event => {
                             switch (event.key) {
                             case Qt.Key_Escape:
-                                // Primero se limpia la búsqueda; con el campo
-                                // vacío (o en la grilla), cierra.
+                                // Clear the search first; with an empty field
+                                // (or in the grid), close.
                                 if (overview.query.trim().length > 0) overview.query = ""
                                 else PopupManager.close()
                                 break
@@ -286,7 +256,7 @@ PanelWindow {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: searchInput.text.length === 0
-                            text: "Escribí para buscar aplicaciones"
+                            text: "Type to search"
                             color: Theme.fgDim
                             font: searchInput.font
                         }
@@ -308,21 +278,21 @@ PanelWindow {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: overview.searching
-                        ? "Enter para abrir · flechas para elegir · Esc para volver"
-                        : "Arrastrá una ventana para moverla · Esc para cerrar"
+                        ? "Enter to open · arrows to select · Esc to go back"
+                        : "Drag a window to move it · Esc to close"
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
                     font.pixelSize: 10
                 }
             }
 
-            // ---- Resultados de búsqueda ----
+            // ---- Search results ----
             Item {
                 anchors.fill: parent
                 anchors.topMargin: 96
                 visible: overview.searching
 
-                // Lista larga (grilla con todas las apps) → scroll.
+                // Long list (grid with every app) → scroll.
                 Flickable {
                     id: resultsFlick
                     anchors.fill: parent
@@ -393,7 +363,7 @@ PanelWindow {
                     }
                 }
 
-                // Estado vacío.
+                // Empty state.
                 Column {
                     anchors { top: parent.top; topMargin: 80; horizontalCenter: parent.horizontalCenter }
                     visible: overview.results.length === 0
@@ -406,7 +376,7 @@ PanelWindow {
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Sin resultados para «" + overview.query.trim() + "»"
+                        text: "No results for “" + overview.query.trim() + "”"
                         color: Theme.fgDim
                         font.family: Theme.fontFamily
                         font.pixelSize: 11
@@ -414,7 +384,7 @@ PanelWindow {
                 }
             }
 
-            // ---- Mosaico ----
+            // ---- Mosaic ----
             Grid {
                 id: grid
                 visible: !overview.searching
@@ -429,18 +399,19 @@ PanelWindow {
                     delegate: Column {
                         id: card
                         required property var modelData
-                        readonly property int targetId: modelData.id
+                        readonly property string targetName: modelData.name
                         readonly property bool isActive: modelData.active
-                        readonly property bool isDrop: overview.dropTarget === targetId
+                        readonly property bool isDrop: overview.dropTarget === targetName
+                        // Sway.windows is already most recent first; floating above tiled.
                         readonly property var winsHere: overview.clients
-                            .filter(c => c.workspace.id === card.modelData.id && !c.hidden)
-                            // Más reciente arriba; las flotantes sobre las tiled.
-                            .sort((a, b) => (b.floating - a.floating) || (a.focusHistoryID - b.focusHistoryID))
+                            .filter(c => c.ws === card.modelData.name)
+                            .sort((a, b) => b.floating - a.floating)
+                        // Sway reports output geometry in logical pixels, like window rects.
                         readonly property var mon: modelData.monitor
                         readonly property real mx: mon ? mon.x : 0
                         readonly property real my: mon ? mon.y : 0
-                        readonly property real mw: mon ? mon.width / mon.scale : overview.width
-                        readonly property real mh: mon ? mon.height / mon.scale : overview.height
+                        readonly property real mw: mon ? mon.width : overview.width
+                        readonly property real mh: mon ? mon.height : overview.height
 
                         spacing: 0
 
@@ -467,7 +438,7 @@ PanelWindow {
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                 }
 
-                                // Resalta la tarjeta destino al arrastrar.
+                                // Highlight the drop target while dragging.
                                 Rectangle {
                                     anchors.fill: parent
                                     color: Theme.withAlpha(Theme.accent, 0.22)
@@ -477,10 +448,10 @@ PanelWindow {
 
                                 MouseArea {
                                     anchors.fill: parent
-                                    onClicked: overview.focusWorkspace(card.modelData.id)
+                                    onClicked: overview.focusWorkspace(card.modelData.name)
                                 }
 
-                                // Estado vacío sobre la imagen.
+                                // Empty state over the image.
                                 Rectangle {
                                     anchors.centerIn: parent
                                     visible: card.winsHere.length === 0
@@ -491,7 +462,7 @@ PanelWindow {
                                     Text {
                                         id: emptyText
                                         anchors.centerIn: parent
-                                        text: "Vacío"
+                                        text: "Empty"
                                         color: "#ffffff"
                                         font.family: Theme.fontFamily
                                         font.pixelSize: 11
@@ -504,16 +475,16 @@ PanelWindow {
                                         id: winBox
                                         required property var modelData
                                         required property int index
-                                        readonly property bool isFocused: modelData.address === overview.activeAddress
+                                        readonly property bool isFocused: modelData.focused
                                         readonly property bool hovered: dragArea.containsMouse && !dragging
                                         property bool dragging: false
 
-                                        // Las ventanas se separan del borde lo mismo que en pantalla,
-                                        // escalado, para que se lean como bloques sueltos.
-                                        x: Math.max(3, (modelData.at[0] - card.mx) / card.mw * surface.width)
-                                        y: Math.max(3, (modelData.at[1] - card.my) / card.mh * surface.height)
-                                        width: Math.max(10, Math.min(surface.width - x - 3, modelData.size[0] / card.mw * surface.width))
-                                        height: Math.max(10, Math.min(surface.height - y - 3, modelData.size[1] / card.mh * surface.height))
+                                        // Windows keep their on-screen gaps, scaled, so they read as
+                                        // separate blocks.
+                                        x: Math.max(3, (modelData.rect.x - card.mx) / card.mw * surface.width)
+                                        y: Math.max(3, (modelData.rect.y - card.my) / card.mh * surface.height)
+                                        width: Math.max(10, Math.min(surface.width - x - 3, modelData.rect.width / card.mw * surface.width))
+                                        height: Math.max(10, Math.min(surface.height - y - 3, modelData.rect.height / card.mh * surface.height))
                                         z: card.winsHere.length - index
                                         radius: Theme.radius - 8
                                         color: Theme.popupBg
@@ -537,7 +508,7 @@ PanelWindow {
                                             id: appIcon
                                             anchors.centerIn: parent
                                             anchors.verticalCenterOffset: titleText.visible ? -8 : 0
-                                            source: Quickshell.iconPath(winBox.modelData.class, "application-x-executable")
+                                            source: Quickshell.iconPath(winBox.modelData.appId, "application-x-executable")
                                             implicitSize: Math.max(12, Math.min(48, winBox.width * 0.35, winBox.height * 0.4))
                                         }
                                         Text {
@@ -545,7 +516,7 @@ PanelWindow {
                                             anchors { top: appIcon.bottom; topMargin: 6; horizontalCenter: parent.horizontalCenter }
                                             width: parent.width - 16
                                             visible: winBox.height > 64 && winBox.width > 60
-                                            text: winBox.modelData.title || winBox.modelData.class
+                                            text: winBox.modelData.title || winBox.modelData.appId
                                             color: Theme.fg
                                             font.family: Theme.fontFamily
                                             font.pixelSize: 10
@@ -571,12 +542,12 @@ PanelWindow {
                                                 var dy = mouse.y - dragArea.pressPos.y
                                                 if (!winBox.dragging && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
                                                     winBox.dragging = true
-                                                    // El fantasma tiene tamaño fijo: una ventana grande
-                                                    // no debe tapar las tarjetas destino.
+                                                    // Fixed-size ghost: a large window must not cover
+                                                    // the drop targets.
                                                     ghost.width = Math.min(160, Math.max(96, winBox.width * 0.6))
                                                     ghost.height = Math.round(ghost.width * 0.62)
-                                                    ghost.title = winBox.modelData.title || winBox.modelData.class
-                                                    ghost.iconClass = winBox.modelData.class
+                                                    ghost.title = winBox.modelData.title || winBox.modelData.appId
+                                                    ghost.iconClass = winBox.modelData.appId
                                                     ghost.visible = true
                                                 }
                                                 if (winBox.dragging) {
@@ -584,17 +555,17 @@ PanelWindow {
                                                     ghost.x = abs.x - ghost.width / 2
                                                     ghost.y = abs.y - ghost.height / 2
                                                     var t = overview.cardAt(abs.x, abs.y)
-                                                    overview.dropTarget = (t && t.targetId !== card.targetId) ? t.targetId : -1
+                                                    overview.dropTarget = (t && t.targetName !== card.targetName) ? t.targetName : ""
                                                 }
                                             }
                                             onReleased: {
                                                 if (winBox.dragging) {
                                                     ghost.visible = false
-                                                    if (overview.dropTarget !== -1)
-                                                        overview.moveWindow(winBox.modelData.address, overview.dropTarget)
-                                                    overview.dropTarget = -1
+                                                    if (overview.dropTarget !== "")
+                                                        Sway.moveWindow(winBox.modelData.id, overview.dropTarget)
+                                                    overview.dropTarget = ""
                                                 } else if (containsMouse) {
-                                                    overview.closeThenDispatch("hl.dsp.focus({ window = \"address:" + winBox.modelData.address + "\" })")
+                                                    overview.closeThenDispatch("[con_id=" + winBox.modelData.id + "] focus")
                                                 }
                                                 winBox.dragging = false
                                             }
@@ -603,7 +574,7 @@ PanelWindow {
                                 }
                             }
 
-                            // Borde por encima de las ventanas (ClippingRectangle no lo pinta arriba).
+                            // Border above the windows (ClippingRectangle doesn't draw it on top).
                             Rectangle {
                                 anchors.fill: parent
                                 radius: surface.radius
@@ -615,7 +586,7 @@ PanelWindow {
                             }
                         }
 
-                        // ---- Etiqueta bajo la tarjeta ----
+                        // ---- Label under the card ----
                         Item {
                             width: overview.cardW
                             height: overview.labelH
@@ -644,7 +615,7 @@ PanelWindow {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: card.winsHere.length > 0
-                                    text: card.winsHere.length === 1 ? "1 ventana" : card.winsHere.length + " ventanas"
+                                    text: card.winsHere.length === 1 ? "1 window" : card.winsHere.length + " windows"
                                     color: Theme.fgDim
                                     font.family: Theme.fontFamily
                                     font.pixelSize: 10
@@ -655,11 +626,11 @@ PanelWindow {
                     }
                 }
 
-                // ---- Tarjeta "nuevo workspace" ----
+                // ---- "New workspace" card ----
                 Column {
                     id: addCard
-                    readonly property int targetId: overview.nextFreeId
-                    readonly property bool isDrop: overview.dropTarget === targetId
+                    readonly property string targetName: overview.nextFreeName
+                    readonly property bool isDrop: overview.dropTarget === targetName
 
                     Rectangle {
                         width: overview.cardW
@@ -677,7 +648,7 @@ PanelWindow {
                         MouseArea {
                             id: addArea
                             anchors.fill: parent
-                            onClicked: overview.focusWorkspace(addCard.targetId)
+                            onClicked: overview.focusWorkspace(addCard.targetName)
                         }
 
                         Column {
@@ -691,7 +662,7 @@ PanelWindow {
                             }
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: addCard.isDrop ? "Soltá para moverla aquí" : "Workspace nuevo"
+                                text: addCard.isDrop ? "Drop to move it here" : "New workspace"
                                 color: Theme.fgDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: 10
@@ -703,7 +674,7 @@ PanelWindow {
             }
         }
 
-        // ---- Fantasma de arrastre ----
+        // ---- Drag ghost ----
         Rectangle {
             id: ghost
             visible: false

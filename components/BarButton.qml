@@ -1,9 +1,8 @@
 import QtQuick
 import ".."
 
-// Botón genérico de la barra: fondo redondeado que se resalta en hover
-// o cuando su popup asociado está abierto. El contenido (icono, texto,
-// o ambos) se pasa como hijos.
+// Generic bar button: rounded background highlighted on hover or while
+// its popup is open. Content (icon, text, or both) is passed as children.
 Rectangle {
     id: btn
     default property alias content: row.data
@@ -14,10 +13,11 @@ Rectangle {
     signal clicked
     signal rightClicked
 
-    implicitHeight: Theme.barHeight - 10
-    implicitWidth: row.implicitWidth + 16
-    radius: Theme.radius - 4
-    color: btn.active ? Theme.activeBg : (mouse.containsMouse ? Theme.hoverBg : "transparent")
+    implicitHeight: Theme.barHeight - 8
+    implicitWidth: row.implicitWidth + 24
+    radius: height / 2
+    // GNOME highlights open panel buttons in white, not the accent.
+    color: btn.active ? Theme.withAlpha("#ffffff", 0.22) : (mouse.containsMouse ? Theme.hoverBg : "transparent")
 
     Behavior on color { ColorAnimation { duration: 100 } }
 

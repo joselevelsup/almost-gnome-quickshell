@@ -1,16 +1,15 @@
 import Quickshell
-import Quickshell.Hyprland
 import QtQuick
 import ".."
 
-// Menú contextual de un icono del Dock (click derecho): ventanas abiertas
-// de la app, ventana nueva, fijar/quitar del dock y cerrar. Es un popup
-// xdg anclado sobre el icono; un click fuera lo cierra (HyprlandFocusGrab).
+// Context menu for a dock icon (right-click): the app's open windows, new
+// window, pin/unpin and close. An xdg popup anchored above the icon; a
+// click outside closes it (grabFocus).
 PopupWindow {
     id: menu
     property var dockWindow
-    // Se guarda la clave y no el objeto: Dock.apps se recalcula cada vez que
-    // cambian las ventanas, y el menú debe ver siempre el estado en vivo.
+    // Store the key, not the object: Dock.apps is rebuilt whenever windows
+    // change, and the menu must always see live state.
     property string appKey: ""
     readonly property var app: dockWindow && appKey ? (dockWindow.apps.find(a => a.key === appKey) || null) : null
     property Item anchorItem: null
@@ -21,7 +20,7 @@ PopupWindow {
         menu.visible = true
     }
     function closeMenu() { menu.visible = false }
-    // Si la app desaparece (se cerró su última ventana y no está fijada).
+    // If the app disappears (its last window closed and it isn't pinned).
     onAppChanged: if (visible && !app) closeMenu()
 
     anchor.window: dockWindow
@@ -34,11 +33,7 @@ PopupWindow {
     implicitWidth: 240
     implicitHeight: col.implicitHeight + 12
 
-    HyprlandFocusGrab {
-        windows: [menu]
-        active: menu.visible
-        onCleared: menu.closeMenu()
-    }
+    grabFocus: true
 
     onVisibleChanged: if (visible) { card.opacity = 0; openAnim.restart() }
     NumberAnimation { id: openAnim; target: card; property: "opacity"; to: 1; duration: 140 }
@@ -50,7 +45,6 @@ PopupWindow {
         id: card
         anchors.fill: parent
         radius: Theme.radius
-        // Popup xdg: Hyprland no le aplica blur de capa, por eso el fondo casi opaco.
         color: Theme.toastBg
         border.width: 1
         border.color: Theme.border
@@ -74,14 +68,14 @@ PopupWindow {
                 elide: Text.ElideRight
             }
 
-            // Ventanas abiertas (solo con más de una, para elegir).
+            // Open windows (only with more than one, to choose from).
             Repeater {
                 model: menu.windows.length > 1 ? menu.windows : []
                 delegate: ActionRow {
                     required property var modelData
                     width: col.width
                     icon: "focus-windows-symbolic"
-                    label: modelData.title || "Sin título"
+                    label: modelData.title || "Untitled"
                     tint: modelData.activated ? Theme.accent : Theme.fg
                     onClicked: { modelData.activate(); menu.closeMenu() }
                 }
@@ -98,14 +92,14 @@ PopupWindow {
                 width: col.width
                 visible: menu.entry !== null
                 icon: "window-new-symbolic"
-                label: "Nueva ventana"
+                label: "New Window"
                 onClicked: { AppLauncher.launch(menu.entry); menu.closeMenu() }
             }
             ActionRow {
                 width: col.width
                 visible: menu.entry !== null
                 icon: menu.app && menu.app.pinned ? "list-remove-symbolic" : "view-pin-symbolic"
-                label: menu.app && menu.app.pinned ? "Quitar del dock" : "Fijar en el dock"
+                label: menu.app && menu.app.pinned ? "Unpin" : "Pin to Dash"
                 onClicked: {
                     if (menu.app.pinned) DockPins.unpin(menu.entry.id)
                     else DockPins.pin(menu.entry.id)
@@ -116,7 +110,7 @@ PopupWindow {
                 width: col.width
                 visible: menu.windows.length > 0
                 icon: "window-close-symbolic"
-                label: menu.windows.length > 1 ? "Cerrar " + menu.windows.length + " ventanas" : "Cerrar"
+                label: menu.windows.length > 1 ? "Quit " + menu.windows.length + " Windows" : "Quit"
                 tint: Theme.danger
                 onClicked: {
                     menu.windows.slice().forEach(w => w.close())

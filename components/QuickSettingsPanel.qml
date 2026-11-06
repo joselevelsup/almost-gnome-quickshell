@@ -8,9 +8,9 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Panel de Quick Settings al estilo GNOME 46: fila de sistema arriba
-// (batería, configuración, bloqueo, energía), sliders de volumen y brillo
-// y una grilla de quick toggles tipo píldora.
+// GNOME 50 style Quick Settings: system row on top (battery, screenshot,
+// settings, lock, power), volume and brightness sliders and a grid of
+// pill-shaped quick toggles.
 PopupCard {
     id: popup
     popupName: "quicksettings"
@@ -60,29 +60,29 @@ PopupCard {
     // ---- Audio ----
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var audio: popup.sink ? popup.sink.audio : null
-    // Sin tracker, Pipewire no mantiene vivas las propiedades del nodo
-    // (volumen/mute) y el slider no reflejaría cambios hechos por fuera.
+    // Without a tracker Pipewire doesn't keep node properties (volume/mute)
+    // live, and the slider wouldn't reflect changes made elsewhere.
     PwObjectTracker { objects: popup.sink ? [popup.sink] : [] }
-    // Salidas físicas (sin streams de apps), para elegir la predeterminada.
+    // Physical outputs (no app streams), to pick the default.
     readonly property var sinks: Pipewire.nodes.values.filter(n => n.isSink && !n.isStream && n.audio)
     function sinkLabel(n) { return n.description || n.nickname || n.name }
     function sinkIcon(n) {
-        return /auricular|headphone|headset|cascos/i.test(popup.sinkLabel(n))
+        return /headphone|headset/i.test(popup.sinkLabel(n))
             ? "audio-headphones-symbolic" : "audio-speakers-symbolic"
     }
 
-    // ---- Herramientas opcionales ----
-    // La luz nocturna usa hyprsunset y el modo de energía,
-    // power-profiles-daemon. Si no están, sus controles se ven
-    // deshabilitados (no ocultos) y dicen qué falta.
+    // ---- Optional tools ----
+    // Night light uses wlsunset and power mode uses power-profiles-daemon.
+    // If missing, their controls are shown disabled (not hidden) and say
+    // what's missing.
     property bool hasSunset: false
     property bool sunsetOn: false
     property bool hasProfiles: false
     Process {
         id: probe
         command: ["sh", "-c",
-            "command -v hyprsunset >/dev/null && echo sunset; " +
-            "pgrep -x hyprsunset >/dev/null && echo sunset-on; " +
+            "command -v wlsunset >/dev/null && echo sunset; " +
+            "pgrep -x wlsunset >/dev/null && echo sunset-on; " +
             "busctl --system list 2>/dev/null | grep -qE 'net.hadess.PowerProfiles|org.freedesktop.UPower.PowerProfiles' && echo profiles; true"]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -93,28 +93,26 @@ PopupCard {
             }
         }
     }
-    // Tras prender/apagar hyprsunset se relee el estado real.
+    // Re-read the real state after starting/stopping wlsunset.
     Timer { id: reprobe; interval: 300; onTriggered: probe.running = true }
 
-    // ---- Batería ----
+    // ---- Battery ----
     readonly property var battery: UPower.displayDevice
     readonly property bool hasBattery: popup.battery && popup.battery.isPresent
     readonly property bool charging: popup.hasBattery && popup.battery.state === UPowerDeviceState.Charging
 
-    // ---- Brillo ----
+    // ---- Brightness ----
     property real brightness: 0.5
     property bool hasBrightness: false
     function refreshBrightness() { brightnessRead.running = true }
     Process {
         id: brightnessRead
-        command: ["brightnessctl", "-m"]
+        // Prints the percentage, e.g. "45.00".
+        command: ["light", "-G"]
         stdout: StdioCollector {
             onStreamFinished: {
-                var parts = text.trim().split(",")
-                if (parts.length >= 4) {
-                    var pct = parseInt(parts[3].replace("%", ""))
-                    if (!isNaN(pct)) { popup.brightness = pct / 100; popup.hasBrightness = true }
-                }
+                var pct = parseFloat(text.trim())
+                if (!isNaN(pct)) { popup.brightness = pct / 100; popup.hasBrightness = true }
             }
         }
     }
@@ -124,7 +122,7 @@ PopupCard {
     }
 
     // =================================================================
-    // Fila de sistema
+    // System row
     // =================================================================
     RowLayout {
         width: parent.width
@@ -168,11 +166,11 @@ PopupCard {
         }
         IconButton {
             icon: "preferences-system-symbolic"
-            onClicked: popup.run(["gnome-control-center"])
+            onClicked: { PopupManager.close(); Settings.openWindow("") }
         }
         IconButton {
             icon: "system-lock-screen-symbolic"
-            onClicked: popup.run(["hyprlock"])
+            onClicked: PopupManager.lockScreen()
         }
         IconButton {
             icon: "system-shutdown-symbolic"
@@ -181,7 +179,7 @@ PopupCard {
         }
     }
 
-    // ---- Menú de energía (se despliega bajo la fila de sistema) ----
+    // ---- Power menu (expands below the system row) ----
     Item {
         width: parent.width
         height: popup.powerMenuOpen ? powerCol.implicitHeight : 0
@@ -201,10 +199,10 @@ PopupCard {
                 width: parent.width
                 topPadding: 4
                 bottomPadding: 4
-                ActionRow { width: parent.width; icon: "weather-clear-night-symbolic"; label: "Suspender"; onClicked: popup.run(["systemctl", "suspend"]) }
-                ActionRow { width: parent.width; icon: "system-reboot-symbolic"; label: "Reiniciar"; onClicked: popup.run(["systemctl", "reboot"]) }
-                ActionRow { width: parent.width; icon: "system-log-out-symbolic"; label: "Cerrar sesión"; onClicked: popup.run(["hyprctl", "dispatch", "exit"]) }
-                ActionRow { width: parent.width; icon: "system-shutdown-symbolic"; label: "Apagar"; tint: Theme.danger; onClicked: popup.run(["systemctl", "poweroff"]) }
+                ActionRow { width: parent.width; icon: "weather-clear-night-symbolic"; label: "Suspend"; onClicked: popup.run(["systemctl", "suspend"]) }
+                ActionRow { width: parent.width; icon: "system-reboot-symbolic"; label: "Restart"; onClicked: popup.run(["systemctl", "reboot"]) }
+                ActionRow { width: parent.width; icon: "system-log-out-symbolic"; label: "Log Out"; onClicked: popup.run(["swaymsg", "exit"]) }
+                ActionRow { width: parent.width; icon: "system-shutdown-symbolic"; label: "Power Off"; tint: Theme.danger; onClicked: popup.run(["systemctl", "poweroff"]) }
             }
         }
     }
@@ -228,7 +226,7 @@ PopupCard {
         onExpandClicked: popup.outputsOpen = !popup.outputsOpen
     }
 
-    // ---- Salidas de audio (se despliega bajo el slider de volumen) ----
+    // ---- Audio outputs (expands below the volume slider) ----
     Item {
         width: parent.width
         height: popup.outputsOpen ? outputsCol.implicitHeight : 0
@@ -269,7 +267,7 @@ PopupCard {
         value: popup.brightness
         onValueEdited: v => {
             popup.brightness = v
-            Quickshell.execDetached(["brightnessctl", "set", Math.max(1, Math.round(v * 100)) + "%"])
+            Quickshell.execDetached(["light", "-S", String(Math.max(1, Math.round(v * 100)))])
         }
     }
 
@@ -287,9 +285,9 @@ PopupCard {
             Layout.preferredWidth: 1
             icon: Networking.wifiEnabled ? "network-wireless-symbolic" : "network-wireless-disabled-symbolic"
             label: "Wi-Fi"
-            sublabel: !Networking.wifiEnabled ? "Apagado"
+            sublabel: !Networking.wifiEnabled ? "Off"
                 : (popup.wifiDevice && popup.wifiDevice.connected && popup.wifiNetworkName) ? popup.wifiNetworkName
-                : "Sin conexión"
+                : "Disconnected"
             checked: Networking.wifiEnabled
             onToggled: value => Networking.wifiEnabled = value
         }
@@ -299,35 +297,25 @@ PopupCard {
             enabled: popup.btAdapter !== null
             icon: popup.btOn ? "bluetooth-active-symbolic" : "bluetooth-disabled-symbolic"
             label: "Bluetooth"
-            sublabel: !popup.btOn ? "Apagado" : (popup.btConnectedName || "Encendido")
+            sublabel: !popup.btOn ? "Off" : (popup.btConnectedName || "On")
             checked: popup.btOn
             onToggled: value => { if (popup.btAdapter) popup.btAdapter.enabled = value }
         }
         QuickToggle {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
-            icon: Notifications.dnd ? "notifications-disabled-symbolic" : "notification-symbolic"
-            label: "No molestar"
-            sublabel: Notifications.dnd ? "Activado" : "Desactivado"
+            icon: Notifications.dnd ? "notifications-disabled-symbolic" : "preferences-system-notifications-symbolic"
+            label: "Do Not Disturb"
+            sublabel: Notifications.dnd ? "On" : "Off"
             checked: Notifications.dnd
             onToggled: value => Notifications.dnd = value
         }
         QuickToggle {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
-            iconSource: "file://" + Quickshell.shellPath("assets/dark-mode-symbolic.svg")
-            label: "Estilo oscuro"
-            sublabel: Theme.dark ? "Activado" : "Desactivado"
-            checked: Theme.dark
-            onToggled: value => Quickshell.execDetached(["gsettings", "set",
-                "org.gnome.desktop.interface", "color-scheme", value ? "prefer-dark" : "prefer-light"])
-        }
-        QuickToggle {
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
             iconSource: "file://" + Quickshell.shellPath("assets/caffeine-symbolic.svg")
-            label: "Cafeína"
-            sublabel: Caffeine.enabled ? "Sin suspensión" : "Desactivado"
+            label: "Caffeine"
+            sublabel: Caffeine.enabled ? "Screen stays awake" : "Off"
             checked: Caffeine.enabled
             onToggled: value => Caffeine.enabled = value
         }
@@ -336,33 +324,33 @@ PopupCard {
             Layout.preferredWidth: 1
             enabled: popup.hasSunset
             icon: "night-light-symbolic"
-            label: "Luz nocturna"
-            sublabel: !popup.hasSunset ? "No instalada" : popup.sunsetOn ? "Activada" : "Desactivada"
+            label: "Night Light"
+            sublabel: !popup.hasSunset ? "wlsunset not installed" : popup.sunsetOn ? "On" : "Off"
             checked: popup.sunsetOn
             onToggled: value => {
-                Quickshell.execDetached(value ? ["hyprsunset", "-t", "4000"] : ["pkill", "-x", "hyprsunset"])
+                Quickshell.execDetached(value ? Settings.nightLightCommand() : ["pkill", "-x", "wlsunset"])
                 reprobe.restart()
             }
         }
     }
 
     // =================================================================
-    // Modo de energía
+    // Power mode
     // =================================================================
-    SectionLabel { text: "Modo de energía" }
+    SectionLabel { text: "Power Mode" }
     SegmentedControl {
         width: parent.width
         enabled: popup.hasProfiles
         opacity: enabled ? 1 : 0.4
         model: {
             var m = [
-                { label: "Ahorro", value: String(PowerProfile.PowerSaver) },
-                { label: "Equilibrado", value: String(PowerProfile.Balanced) }
+                { label: "Power Saver", value: String(PowerProfile.PowerSaver) },
+                { label: "Balanced", value: String(PowerProfile.Balanced) }
             ]
-            // Sin el daemon no se toca PowerProfiles: acceder lo intenta
-            // levantar y llena el log de avisos.
+            // Don't touch PowerProfiles without the daemon: accessing it tries
+            // to start it and floods the log with warnings.
             if (popup.hasProfiles && PowerProfiles.hasPerformanceProfile)
-                m.push({ label: "Rendimiento", value: String(PowerProfile.Performance) })
+                m.push({ label: "Performance", value: String(PowerProfile.Performance) })
             return m
         }
         current: popup.hasProfiles ? String(PowerProfiles.profile) : ""
@@ -372,7 +360,7 @@ PopupCard {
         visible: !popup.hasProfiles
         width: parent.width
         leftPadding: 4
-        text: "Requiere power-profiles-daemon"
+        text: "Requires power-profiles-daemon"
         color: Theme.fgDim
         font.family: Theme.fontFamily
         font.pixelSize: 10

@@ -3,8 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Panel combinado de calendario + notificaciones, como el que abre GNOME
-// Shell al hacer click en la hora.
+// Combined calendar + notifications panel, like the one GNOME Shell opens
+// when clicking the clock.
 PopupCard {
     id: popup
     popupName: "calendar"
@@ -14,11 +14,11 @@ PopupCard {
     Text {
         width: parent.width
         text: {
-            var now = new Date()
-            var wd = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-            var d = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
-                     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-            return wd[(now.getDay() + 6) % 7] + ", " + now.getDate() + " de " + d[now.getMonth()]
+            var now = Clock.now
+            var wd = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+            var d = ["January", "February", "March", "April", "May", "June",
+                     "July", "August", "September", "October", "November", "December"]
+            return wd[now.getDay()] + ", " + d[now.getMonth()] + " " + now.getDate()
         }
         font.family: Theme.fontFamily
         font.pixelSize: 13
@@ -66,7 +66,7 @@ PopupCard {
     RowLayout {
         width: parent.width
         Text {
-            text: "Notificaciones"
+            text: "Notifications"
             font.family: Theme.fontFamily
             font.pixelSize: 12
             font.weight: Font.DemiBold
@@ -75,7 +75,7 @@ PopupCard {
         }
         Text {
             visible: Notifications.history.length > 0
-            text: "Limpiar todo"
+            text: "Clear"
             color: Theme.accent
             font.family: Theme.fontFamily
             font.pixelSize: 11
@@ -86,7 +86,7 @@ PopupCard {
     Text {
         width: parent.width
         visible: Notifications.history.length === 0
-        text: "No hay notificaciones"
+        text: "No Notifications"
         color: Theme.fgDim
         font.family: Theme.fontFamily
         font.pixelSize: 11

@@ -2,9 +2,9 @@ pragma Singleton
 import QtQuick
 import Quickshell.Services.Notifications
 
-// Servidor de notificaciones + historial, al estilo GNOME (el mismo panel
-// que aparece al abrir el calendario). Los banners emergentes se manejan
-// aparte en components/NotificationToasts.qml usando server.trackedNotifications.
+// Notification server + history, GNOME style (the same panel shown when
+// opening the calendar). Popup banners are handled separately in
+// components/NotificationToasts.qml using server.trackedNotifications.
 QtObject {
     id: notifications
 
@@ -23,7 +23,7 @@ QtObject {
         onNotification: function (n) {
             var entry = {
                 id: n.id,
-                appName: n.appName || "Notificación",
+                appName: n.appName || "Notification",
                 appIcon: n.appIcon,
                 summary: n.summary,
                 body: n.body,
@@ -33,9 +33,9 @@ QtObject {
             }
             notifications.history = [entry].concat(notifications.history).slice(0, 50)
 
-            // "tracked" mantiene la notificación viva para poder mostrarla como
-            // banner; el servidor la retira solo de trackedNotifications cuando
-            // se cierra (dismiss/expire), sin que tengamos que tocar "tracked".
+            // "tracked" keeps the notification alive so it can be shown as a
+            // banner; the server removes it from trackedNotifications on its own
+            // when it closes (dismiss/expire), without us touching "tracked".
             if (!notifications.dnd) n.tracked = true
         }
     }

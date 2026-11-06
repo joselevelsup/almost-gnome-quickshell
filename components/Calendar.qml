@@ -4,19 +4,19 @@ import ".."
 Item {
     id: cal
 
-    property date shownDate: new Date()
+    property date shownDate
     property int shownYear: shownDate.getFullYear()
     property int shownMonth: shownDate.getMonth()
     property var days: []
     property string monthLabel: ""
 
-    readonly property var months: ["enero", "febrero", "marzo", "abril", "mayo", "junio",
-                                   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-    readonly property var weekdays: ["L", "M", "X", "J", "V", "S", "D"]
+    readonly property var months: ["January", "February", "March", "April", "May", "June",
+                                   "July", "August", "September", "October", "November", "December"]
+    readonly property var weekdays: ["S", "M", "T", "W", "T", "F", "S"]
 
     function build() {
         var first = new Date(cal.shownYear, cal.shownMonth, 1)
-        var offset = (first.getDay() + 6) % 7
+        var offset = first.getDay()
         var total = new Date(cal.shownYear, cal.shownMonth + 1, 0).getDate()
         var arr = []
         for (var i = 0; i < offset; i++) arr.push(null)
@@ -27,11 +27,11 @@ Item {
     }
 
     onShownDateChanged: build()
-    Component.onCompleted: build()
+    Component.onCompleted: cal.shownDate = Clock.now
 
     function isToday(d) {
         if (d == null) return false
-        var now = new Date()
+        var now = Clock.now
         return d === now.getDate() && cal.shownMonth === now.getMonth() && cal.shownYear === now.getFullYear()
     }
 

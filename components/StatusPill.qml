@@ -4,9 +4,8 @@ import Quickshell.Services.UPower
 import QtQuick
 import ".."
 
-// Resumen de estado a la derecha de la barra (red, volumen, batería) que
-// abre el panel de Quick Settings, como el indicador de la esquina
-// superior derecha de GNOME Shell.
+// System status icons on the right of the bar (network, volume, battery)
+// that open Quick Settings, like GNOME Shell's top-right status area.
 BarButton {
     id: pill
     active: PopupManager.current === "quicksettings"
@@ -52,12 +51,14 @@ BarButton {
         name: pill.batteryIcon()
     }
     Text {
-        visible: pill.hasBattery
+        visible: pill.hasBattery && Settings.options.batteryPercent
+        anchors.verticalCenter: parent ? parent.verticalCenter : undefined
         text: Math.round(pill.battery.percentage * 100) + "%"
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 11
-        anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+        font.pixelSize: 13
+        font.weight: Font.Bold
+        font.features: { "tnum": 1 }
     }
 
     onClicked: PopupManager.open("quicksettings")

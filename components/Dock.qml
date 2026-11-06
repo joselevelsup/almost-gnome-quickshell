@@ -1,41 +1,41 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Quickshell.I3
 import Quickshell.Widgets
 import QtQuick
 import ".."
 
-// Dock inferior al estilo dash-to-dock de GNOME: apps fijadas (DockPins),
-// luego las abiertas sin fijar, y el botón de "Mostrar aplicaciones" que
-// abre el overview. Las ventanas salen de wlr-foreign-toplevel
-// (ToplevelManager), así que el estado es en vivo y sin sondeo.
+// Bottom dock in the style of GNOME's dash-to-dock: pinned apps (DockPins),
+// then running apps that aren't pinned, and a "Show Apps" button that opens
+// the app grid. Windows come from wlr-foreign-toplevel (ToplevelManager),
+// so state is live without polling.
 //
-// Se oculta solo para no robar alto en 1366×768: aparece al llevar el
-// puntero al borde inferior, y queda fijo mientras el workspace actual
-// esté vacío o haya un menú abierto.
+// Auto-hides (Settings) to save height on 1366×768: it appears when the
+// pointer reaches the bottom edge, and stays while the current workspace is
+// empty or a menu is open. With auto-hide off it reserves its space.
 //
-// Click: abre la app, la enfoca o, con varias ventanas, rota entre ellas.
-// Click medio: ventana nueva. Click derecho: menú.
+// Click: launch the app, focus it or, with several windows, cycle them.
+// Middle-click: new window. Right-click: menu.
 PanelWindow {
     id: dock
     WlrLayershell.namespace: "quickshell:popup:dock"
     WlrLayershell.layer: WlrLayer.Top
     anchors { bottom: true; left: true; right: true }
-    exclusiveZone: 0
+    exclusiveZone: Settings.options.dockAutohide ? 0 : body.height + 8
     focusable: false
     color: "transparent"
     implicitHeight: 120
 
-    // Solo el cuerpo (o la franja de activación, si está oculto) recibe el
-    // puntero; el resto de la superficie deja pasar los clicks.
+    // Only the body (or the trigger strip, when hidden) takes the pointer;
+    // the rest of the surface lets clicks through.
     mask: Region { item: dock.revealed ? body : trigger }
 
-    // ---- Modelo ----
+    // ---- Model ----
     function entryFor(appId) {
         return DesktopEntries.byId(appId) || DesktopEntries.heuristicLookup(appId)
     }
     readonly property var apps: {
-        DesktopEntries.applications.values // re-evaluar cuando cambian los .desktop
+        DesktopEntries.applications.values // re-evaluate when .desktop files change
         var list = []
         var byKey = {}
         for (var i = 0; i < DockPins.pinned.length; i++) {
@@ -63,16 +63,18 @@ PanelWindow {
             if (app.entry) AppLauncher.launch(app.entry)
             return
         }
-        // Con varias ventanas, cada click pasa a la siguiente.
+        // With several windows, each click moves to the next one.
         var i = app.windows.findIndex(w => w.activated)
         app.windows[(i + 1) % app.windows.length].activate()
     }
 
-    // ---- Visibilidad ----
-    readonly property bool workspaceEmpty: Hyprland.focusedWorkspace !== null
-        && Hyprland.focusedWorkspace.toplevels.values.length === 0
+    // ---- Visibility ----
+    readonly property bool workspaceEmpty: I3.focusedWorkspace !== null
+        && !Sway.windows.some(w => w.ws === I3.focusedWorkspace.name)
     property bool hot: false
-    readonly property bool revealed: hot || workspaceEmpty || menu.visible
+    readonly property bool revealed: !Settings.options.dockAutohide || hot || workspaceEmpty || menu.visible
+    // Icon tile size from Settings.
+    readonly property int tile: ({ small: 44, large: 64 })[Settings.options.dockIconSize] || 52
 
     Timer {
         id: hideTimer
@@ -80,7 +82,7 @@ PanelWindow {
         onTriggered: dock.hot = false
     }
 
-    // Franja invisible pegada al borde inferior que despierta el dock.
+    // Invisible strip along the bottom edge that wakes the dock.
     Item {
         id: trigger
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
@@ -91,13 +93,13 @@ PanelWindow {
         }
     }
 
-    // ---- Cuerpo ----
+    // ---- Body ----
     Rectangle {
         id: body
         anchors.horizontalCenter: parent.horizontalCenter
         y: dock.revealed ? dock.height - height - 8 : dock.height + 4
         width: row.implicitWidth + 12
-        height: 64
+        height: dock.tile + 12
         radius: Theme.radius + 4
         color: Theme.popupBg
         border.width: 1
@@ -129,18 +131,19 @@ PanelWindow {
                     required property int index
                     spacing: 4
 
-                    // Separador entre fijadas y abiertas sin fijar.
+                    // Separator between pinned and unpinned running apps.
                     Rectangle {
                         visible: !slot.modelData.pinned && slot.index > 0 && dock.apps[slot.index - 1].pinned
                         anchors.verticalCenter: parent.verticalCenter
                         width: 1
-                        height: 36
+                        height: dock.tile - 16
                         color: Theme.border
                     }
 
                     DockItem {
                         id: dockItem
                         app: slot.modelData
+                        size: dock.tile
                         highlighted: menu.visible && menu.appKey === slot.modelData.key
                         onHoveredChanged: tooltip.target = hovered ? dockItem : (tooltip.target === dockItem ? null : tooltip.target)
                         onActivated: dock.activateApp(slot.modelData)
@@ -153,16 +156,16 @@ PanelWindow {
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
-                height: 36
+                height: dock.tile - 16
                 color: Theme.border
             }
 
-            // "Mostrar aplicaciones": abre el overview (con su buscador).
+            // "Show Apps": opens the app grid, like GNOME's dash.
             Rectangle {
                 id: gridBtn
-                readonly property string tipText: "Mostrar aplicaciones"
-                width: 52
-                height: 52
+                readonly property string tipText: "Show Apps"
+                width: dock.tile
+                height: dock.tile
                 radius: Theme.radius - 2
                 color: gridMouse.containsMouse ? Theme.cardHoverBg : "transparent"
                 scale: gridMouse.pressed ? 0.94 : 1
@@ -172,7 +175,7 @@ PanelWindow {
                 SymbolicIcon {
                     anchors.centerIn: parent
                     name: "view-app-grid-symbolic"
-                    size: 24
+                    size: Math.round(dock.tile * 0.46)
                 }
                 MouseArea {
                     id: gridMouse
@@ -180,13 +183,13 @@ PanelWindow {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onContainsMouseChanged: tooltip.target = containsMouse ? gridBtn : (tooltip.target === gridBtn ? null : tooltip.target)
-                    onClicked: PopupManager.open("overview")
+                    onClicked: PopupManager.current === "overview" && PopupManager.appsMode ? PopupManager.close() : PopupManager.openApps()
                 }
             }
         }
     }
 
-    // ---- Tooltip con el nombre ----
+    // ---- Name tooltip ----
     Rectangle {
         id: tooltip
         property Item target: null
@@ -218,7 +221,7 @@ PanelWindow {
         }
     }
 
-    // ---- Menú contextual ----
+    // ---- Context menu ----
     DockMenu {
         id: menu
         dockWindow: dock

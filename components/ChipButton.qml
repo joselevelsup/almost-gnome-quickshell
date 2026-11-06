@@ -1,10 +1,10 @@
 import QtQuick
 import ".."
 
-// Botón chico tipo "chip": números de workspace y flechas del asistente de
-// tiling en WindowControlPopup. `dot` marca con un punto debajo del texto
-// (p. ej. workspace con ventanas). Con `icon` y `text` a la vez muestra
-// ambos (p. ej. "Puntero" en la captura de pantalla).
+// Small "chip" button: workspace numbers and the tiling assistant arrows
+// in WindowControlPopup. `dot` adds a dot below the text (e.g. a workspace
+// with windows). With both `icon` and `text` set, shows both (e.g.
+// "Pointer" in the screenshot UI).
 Rectangle {
     id: chip
     property string text: ""

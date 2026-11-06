@@ -3,10 +3,10 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Apps fijadas en el dock (ids de .desktop, en orden). Se guardan en
-// $XDG_STATE_HOME/quickshell/dock-pinned.json, igual que el fondo de
-// pantalla; si el archivo no existe se usan unos favoritos por defecto
-// (los que no estén instalados simplemente no se muestran).
+// Apps pinned to the dock (.desktop ids, in order). Saved to
+// $XDG_STATE_HOME/quickshell/dock-pinned.json, like the wallpaper; if the
+// file doesn't exist, some default favorites are used (any that aren't
+// installed are simply not shown).
 QtObject {
     id: root
     property var pinned: []
@@ -34,7 +34,7 @@ QtObject {
 
     property FileView file: FileView {
         path: root.stateDir + "/dock-pinned.json"
-        // La primera vez el archivo no existe: no es un error.
+        // On first run the file doesn't exist: not an error.
         printErrors: false
         onLoaded: {
             try {

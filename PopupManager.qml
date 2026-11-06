@@ -1,22 +1,24 @@
 pragma Singleton
 import QtQuick
+import Quickshell
+import Quickshell.I3
 import Quickshell.Io
 
-// Controla qué popup de la barra está abierto: "calendar", "quicksettings" o "".
-// Solo puede haber uno abierto a la vez, como en GNOME Shell.
+// Tracks which bar popup is open ("calendar", "quicksettings", ... or "").
+// Only one can be open at a time, as in GNOME Shell.
 QtObject {
     id: mgr
     property string current: ""
-    // Marca de tiempo del último cambio de popup: las esquinas calientes
-    // la usan para no reabrir lo que el usuario acaba de cerrar.
+    // Timestamp of the last popup change: hot corners use it to avoid
+    // reopening what the user just closed.
     property double lastChange: 0
-    // true → el overview se abre en modo grilla de aplicaciones (esquina
-    // inferior izquierda) en vez del mosaico de workspaces.
+    // true → the overview opens as the app grid (bottom-left corner)
+    // instead of the workspace mosaic.
     property bool appsMode: false
 
     function open(name) {
-        // Con la grilla de apps abierta, el botón del overview pasa al
-        // mosaico en vez de cerrar.
+        // With the app grid open, the overview toggle switches to the
+        // mosaic instead of closing.
         if (mgr.current === name) {
             if (name === "overview" && mgr.appsMode) mgr.appsMode = false
             else mgr.close()
@@ -29,17 +31,46 @@ QtObject {
     function close() { mgr.current = ""; mgr.appsMode = false }
     onCurrentChanged: mgr.lastChange = Date.now()
 
-    // Para atajos de Hyprland, p. ej. Super → `qs ipc call overview toggle`.
+    // Starts the lock screen (lock.qml) as its own instance, through Sway so it
+    // isn't a child of the shell.
+    function lockScreen() {
+        mgr.close()
+        var path = Quickshell.shellPath("lock.qml")
+        // Sway runs exec through sh; the path is single-quoted.
+        if (path.indexOf("'") !== -1) { console.warn("Can't lock: quote in path", path); return }
+        I3.dispatch("exec qs -d -p '" + path + "'")
+    }
+
+    // For Sway keybindings, e.g. `bindsym $mod+d exec qs ipc call overview toggle`.
     property IpcHandler screenshotIpc: IpcHandler {
         target: "screenshot"
         function toggle(): void { mgr.open("screenshot") }
+    }
+
+    property IpcHandler wallpaperIpc: IpcHandler {
+        target: "wallpaper"
+        function toggle(): void { Settings.openWindow("background") }
+    }
+
+    // `qs ipc call settings open`, or `openPage <name>` with one of: datetime,
+    // topbar, appearance, background, dock, nightlight.
+    property IpcHandler settingsIpc: IpcHandler {
+        target: "settings"
+        function open(): void { mgr.close(); Settings.openWindow("") }
+        function openPage(page: string): void { mgr.close(); Settings.openWindow(page) }
+        function close(): void { Settings.windowOpen = false }
+    }
+
+    property IpcHandler lockIpc: IpcHandler {
+        target: "lock"
+        function lock(): void { mgr.lockScreen() }
     }
 
     property IpcHandler overviewIpc: IpcHandler {
         target: "overview"
         function toggle(): void { mgr.open("overview") }
         function open(): void { mgr.appsMode = false; mgr.current = "overview" }
-        // Grilla de aplicaciones, p. ej. Super+G → `qs ipc call overview apps`.
+        // App grid, e.g. `qs ipc call overview apps`.
         function apps(): void { mgr.openApps() }
         function close(): void { if (mgr.current === "overview") mgr.close() }
     }

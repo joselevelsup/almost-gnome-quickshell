@@ -4,6 +4,9 @@ import ".."
 import QtQuick
 import QtQuick.Layouts
 
+// GNOME 50 top bar: workspace indicator on the left, clock in the center,
+// system monitor, tray and system status on the right. Also hosts the background, every
+// popup, the dock and the OSD.
 PanelWindow {
     id: bar
     property var modelData
@@ -20,22 +23,11 @@ PanelWindow {
         anchors.fill: parent
         color: Theme.barBg
 
-        RowLayout {
-            anchors {
-                left: parent.left
-                top: parent.top
-                bottom: parent.bottom
-            }
-            anchors.leftMargin: 8
-            spacing: 4
-
-            ActivitiesButton {}
-            OverviewButton {}
-            WindowMenuButton {}
+        Workspaces {
+            anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
         }
 
-        // Reloj al centro real de la barra (no centrado entre los grupos
-        // izq/der, que tienen anchos distintos).
+        // True center of the bar, not centered between the side groups.
         ClockWidget {
             anchors.centerIn: parent
         }
@@ -46,35 +38,32 @@ PanelWindow {
                 top: parent.top
                 bottom: parent.bottom
             }
-            anchors.rightMargin: 8
+            anchors.rightMargin: 6
             spacing: 4
 
+            SystemMonitor {}
             Tray {}
-            WallpaperButton {}
             StatusPill {}
         }
     }
 
-    // Inhibidor de idle de "Caffeine": va atado a la barra (siempre visible)
-    // porque Wayland exige una superficie para crearlo.
+    // Caffeine's idle inhibitor is tied to the bar (always visible) because
+    // Wayland needs a surface to create it.
     IdleInhibitor {
         window: bar
         enabled: Caffeine.enabled
     }
 
+    Background {}
     DismissLayer {}
-    // Esquinas calientes (hover con retardo, ver HotCorner.qml): la
-    // superior izquierda abre el overview, la inferior izquierda la grilla
-    // de aplicaciones.
+    // Hot corners (hover with a delay, see HotCorner.qml): top-left opens the
+    // overview, bottom-left the app grid.
     HotCorner { edge: "top"; action: "overview" }
     HotCorner { edge: "bottom"; action: "apps" }
     CalendarPopup {}
     QuickSettingsPanel {}
-    WindowControlPopup {}
     OverviewPopup {}
     AltTabPopup {}
-    SuperTabPopup {}
-    WallpaperPopup {}
     NotificationToasts {}
     OsdPopup {}
     Dock {}

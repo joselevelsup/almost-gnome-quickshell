@@ -1,18 +1,18 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
+import Quickshell.I3
 import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Panel de captura de pantalla al estilo GNOME: abajo al centro, con el
-// modo (región, pantalla o ventana), retardo, puntero y el botón de
-// disparo. Se abre desde Quick Settings o por IPC
-// (`qs ipc call screenshot toggle`, p. ej. con la tecla Print).
+// GNOME-style screenshot panel: bottom center, with the mode (selection,
+// screen or window), delay, pointer and the shutter button. Opens from
+// Quick Settings or over IPC (`qs ipc call screenshot toggle`, e.g. bound
+// to Print).
 //
-// La captura en sí la hace un script (slurp + grim): se guarda en
-// Imágenes/Capturas, se copia al portapapeles y avisa con una
-// notificación. Enter captura, Esc cierra, ←/→ cambian de modo.
+// A script (slurp + grim) takes the capture: it is saved to
+// Pictures/Screenshots, copied to the clipboard and announced with a
+// notification. Enter captures, Esc closes, ←/→ change mode.
 PanelWindow {
     id: root
     WlrLayershell.namespace: "quickshell:popup:screenshot"
@@ -20,57 +20,55 @@ PanelWindow {
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     visible: PopupManager.current === "screenshot"
     anchors.bottom: true
-    // Por encima del dock (64 px + 8 de margen) cuando está visible.
+    // Above the dock (64 px + 8 margin) when it's visible.
     margins.bottom: 88
     exclusiveZone: 0
     color: "transparent"
     implicitWidth: 420
     implicitHeight: card.implicitHeight
 
-    // Preferencias: se mantienen mientras corre la shell.
+    // Preferences: kept while the shell runs.
     property string mode: "region" // region | screen | window
     property int delay: 0
     property bool showPointer: false
 
     readonly property var modes: [
-        { value: "region", label: "Región", icon: "edit-select-all-symbolic" },
-        { value: "screen", label: "Pantalla", icon: "video-display-symbolic" },
-        { value: "window", label: "Ventana", icon: "focus-windows-symbolic" }
+        { value: "region", label: "Selection", icon: "edit-select-all-symbolic" },
+        { value: "screen", label: "Screen", icon: "video-display-symbolic" },
+        { value: "window", label: "Window", icon: "focus-windows-symbolic" }
     ]
-    readonly property string hint: root.mode === "region" ? "Arrastrá para elegir el área, o hacé clic para el monitor entero"
-        : root.mode === "window" ? "Después vas a hacer clic en la ventana"
-        : "Captura el monitor " + (Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "actual")
+    readonly property string hint: root.mode === "region" ? "Drag to select an area, or click for the whole monitor"
+        : root.mode === "window" ? "You'll click the window next"
+        : "Captures monitor " + (I3.focusedMonitor ? I3.focusedMonitor.name : "")
 
     function cycleMode(delta) {
         var i = root.modes.findIndex(m => m.value === root.mode)
         root.mode = root.modes[(i + delta + root.modes.length) % root.modes.length].value
     }
 
-    // $1 modo, $2 retardo (s), $3 puntero (0/1), $4 monitor, $5 acento (rrggbb)
+    // $1 mode, $2 delay (s), $3 pointer (0/1), $4 monitor, $5 accent (rrggbb)
     readonly property string script:
         "mode=$1; delay=$2; cursor=$3; mon=$4; acc=$5; " +
-        // Deja que el panel desaparezca antes de seleccionar/capturar.
+        // Let the panel disappear before selecting/capturing.
         "sleep 0.3; " +
         "sl() { slurp -c \"${acc}ff\" -s \"${acc}33\" -b 00000055 -w 2 \"$@\"; }; " +
         "case \"$mode\" in " +
-        // -o: un clic sin arrastrar toma el monitor entero en vez de un punto.
+        // -o: a click without dragging takes the whole monitor instead of a point.
         "  region) g=$(sl -d -o) || exit 0 ;; " +
-        "  window) ws=$(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]'); " +
-        "    g=$(hyprctl clients -j | jq -r --argjson ws \"$ws\" " +
-        "      '.[] | select(.hidden | not) | select(.workspace.id as $w | $ws | index($w)) " +
-        "       | \"\\(.at[0]),\\(.at[1]) \\(.size[0])x\\(.size[1])\"' | sl -r) || exit 0 ;; " +
+        "  window) g=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) " +
+        "       | .rect | \"\\(.x),\\(.y) \\(.width)x\\(.height)\"' | sl -r) || exit 0 ;; " +
         "esac; " +
         "[ \"$delay\" -gt 0 ] && sleep \"$delay\"; " +
         ". \"${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs\" 2>/dev/null; " +
-        "d=\"${XDG_PICTURES_DIR:-$HOME/Pictures}/Capturas\"; mkdir -p \"$d\"; " +
-        "f=\"$d/Captura_$(date +%Y-%m-%d_%H-%M-%S).png\"; " +
+        "d=\"${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots\"; mkdir -p \"$d\"; " +
+        "f=\"$d/Screenshot From $(date '+%Y-%m-%d %H-%M-%S').png\"; " +
         "c=; [ \"$cursor\" = 1 ] && c=-c; " +
         "if [ \"$mode\" = screen ]; then grim $c -o \"$mon\" \"$f\"; else grim $c -g \"$g\" \"$f\"; fi && " +
         "wl-copy < \"$f\" && " +
-        "notify-send -a 'Captura de pantalla' -i \"$f\" 'Captura guardada' 'También se copió al portapapeles'"
+        "notify-send -a 'Screenshot' -i \"$f\" 'Screenshot captured' 'You can paste the image from the clipboard.'"
 
     function capture() {
-        var mon = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        var mon = I3.focusedMonitor ? I3.focusedMonitor.name : ""
         var acc = String(Theme.accent).replace("#", "").slice(-6)
         PopupManager.close()
         Quickshell.execDetached(["sh", "-c", root.script, "sh",
@@ -115,14 +113,14 @@ PanelWindow {
             anchors { fill: parent; margins: 12 }
             spacing: 10
 
-            // ---- Cabecera ----
+            // ---- Header ----
             RowLayout {
                 width: parent.width
                 spacing: 6
                 Text {
                     Layout.fillWidth: true
                     Layout.leftMargin: 4
-                    text: "Captura de pantalla"
+                    text: "Screenshot"
                     color: Theme.fg
                     font.family: Theme.fontFamily
                     font.pixelSize: 13
@@ -135,7 +133,7 @@ PanelWindow {
                 }
             }
 
-            // ---- Modo ----
+            // ---- Mode ----
             Row {
                 width: parent.width
                 spacing: 8
@@ -162,15 +160,15 @@ PanelWindow {
                 elide: Text.ElideRight
             }
 
-            // ---- Opciones ----
-            SectionLabel { text: "Retardo" }
+            // ---- Options ----
+            SectionLabel { text: "Delay" }
             RowLayout {
                 width: parent.width
                 spacing: 8
                 SegmentedControl {
                     Layout.fillWidth: true
                     model: [
-                        { label: "No", value: "0" },
+                        { label: "None", value: "0" },
                         { label: "3 s", value: "3" },
                         { label: "5 s", value: "5" },
                         { label: "10 s", value: "10" }
@@ -180,13 +178,13 @@ PanelWindow {
                 }
                 ChipButton {
                     icon: "input-mouse-symbolic"
-                    text: "Puntero"
+                    text: "Show Pointer"
                     selected: root.showPointer
                     onClicked: root.showPointer = !root.showPointer
                 }
             }
 
-            // ---- Disparo ----
+            // ---- Shutter ----
             Item {
                 width: parent.width
                 height: 64
@@ -229,7 +227,7 @@ PanelWindow {
 
                 Text {
                     anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
-                    text: "Enter para capturar\nEsc para cerrar"
+                    text: "Enter to capture\nEsc to close"
                     horizontalAlignment: Text.AlignRight
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
