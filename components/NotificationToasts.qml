@@ -20,7 +20,7 @@ PanelWindow {
     // margin) gets clipped at the bottom edge.
     readonly property int toastTopMargin: 40
 
-    implicitWidth: 300
+    implicitWidth: 330
     implicitHeight: column.implicitHeight + toastTopMargin
 
     Column {
@@ -29,10 +29,17 @@ PanelWindow {
         anchors.top: parent.top
         anchors.topMargin: toasts.toastTopMargin
         spacing: 8
-        width: 300
+        width: 330
+
+        // The others glide into place when a banner arrives or leaves.
+        move: Transition {
+            NumberAnimation { properties: "y"; duration: 220; easing.type: Easing.OutCubic }
+        }
 
         Repeater {
-            model: Notifications.server.trackedNotifications.values
+            // The live model, not .values: a fresh array would recreate every
+            // banner and replay their entrance.
+            model: Notifications.server.trackedNotifications
             delegate: NotificationRow {
                 id: toast
                 required property var modelData
@@ -43,9 +50,38 @@ PanelWindow {
                 appIcon: modelData.appIcon || ""
                 time: null
                 elevated: true
-                onDismissRequested: {
-                    if (toast.modelData && toast.modelData.dismiss) toast.modelData.dismiss()
+
+                // Entrance: fade in while dropping from above, with one soft
+                // overshoot. Exit: fade out while lifting, then dismiss.
+                property bool leaving: false
+                function leave() {
+                    if (toast.leaving) return
+                    toast.leaving = true
+                    enterAnim.stop()
+                    exitAnim.start()
                 }
+
+                opacity: 0
+                transform: Translate { id: shift; y: -40 }
+                Component.onCompleted: enterAnim.start()
+
+                ParallelAnimation {
+                    id: enterAnim
+                    NumberAnimation { target: toast; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+                    NumberAnimation { target: shift; property: "y"; to: 0; duration: 450; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+                }
+                SequentialAnimation {
+                    id: exitAnim
+                    ParallelAnimation {
+                        NumberAnimation { target: toast; property: "opacity"; to: 0; duration: 200; easing.type: Easing.InCubic }
+                        NumberAnimation { target: shift; property: "y"; to: -20; duration: 200; easing.type: Easing.InCubic }
+                    }
+                    ScriptAction {
+                        script: if (toast.modelData && toast.modelData.dismiss) toast.modelData.dismiss()
+                    }
+                }
+
+                onDismissRequested: toast.leave()
 
                 // Auto-dismiss pauses while hovered, so the notification
                 // can be read calmly.
@@ -53,10 +89,8 @@ PanelWindow {
 
                 Timer {
                     interval: 6000
-                    running: !toastHover.hovered
-                    onTriggered: {
-                        if (toast.modelData && toast.modelData.dismiss) toast.modelData.dismiss()
-                    }
+                    running: !toastHover.hovered && !toast.leaving
+                    onTriggered: toast.leave()
                 }
             }
         }

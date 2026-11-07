@@ -10,7 +10,7 @@ Item {
     property color tint: Theme.fg
     signal clicked
 
-    implicitHeight: 38
+    implicitHeight: 42
     implicitWidth: 200
     opacity: root.enabled ? 1 : 0.4
     Behavior on opacity { NumberAnimation { duration: 100 } }
@@ -34,7 +34,7 @@ Item {
             elide: Text.ElideRight
             color: root.tint
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: 14
             Layout.fillWidth: true
         }
     }

@@ -26,7 +26,7 @@ Rectangle {
     }
 
     visible: player !== null
-    implicitHeight: 84
+    implicitHeight: 92
     radius: Theme.radius - 2
     color: Theme.cardBg
 
@@ -77,7 +77,7 @@ Rectangle {
                     text: root.player ? (root.player.identity || "Player") : ""
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 12
                     elide: Text.ElideRight
                 }
                 Repeater {
@@ -101,7 +101,7 @@ Rectangle {
                 text: root.player ? (root.player.trackTitle || "Unknown title") : ""
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 14
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
@@ -111,7 +111,7 @@ Rectangle {
                 text: root.player ? (root.player.trackArtist || "") : ""
                 color: Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 13
                 elide: Text.ElideRight
             }
 

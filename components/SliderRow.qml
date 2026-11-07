@@ -17,7 +17,7 @@ Item {
     signal iconClicked
     signal expandClicked
 
-    implicitHeight: 36
+    implicitHeight: 40
 
     readonly property real clamped: Math.min(1, Math.max(0, root.value))
 
@@ -97,7 +97,7 @@ Item {
             text: Math.round(root.clamped * 100) + "%"
             color: Theme.fgDim
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 13
             font.features: { "tnum": 1 }
         }
 

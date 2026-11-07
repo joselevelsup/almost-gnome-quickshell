@@ -13,7 +13,7 @@ BarButton {
     Text {
         text: Qt.formatDateTime(Clock.now, clock.fmt)
         font.family: Theme.fontFamily
-        font.pixelSize: 13
+        font.pixelSize: 15
         font.weight: Font.Bold
         color: Theme.fg
     }

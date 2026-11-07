@@ -36,7 +36,7 @@ Rectangle {
                     text: seg.modelData.label
                     color: seg.active ? Theme.accentFg : Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 13
                     font.weight: seg.active ? Font.DemiBold : Font.Normal
                 }
 

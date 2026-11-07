@@ -17,7 +17,7 @@ PanelWindow {
     focusable: false
     color: "transparent"
     mask: Region {}
-    implicitWidth: 300
+    implicitWidth: 330
     implicitHeight: 48
     // Stays visible during the fade-out.
     visible: Osd.shown || pill.opacity > 0
@@ -57,7 +57,7 @@ PanelWindow {
             text: Math.round(Osd.value * 100) + "%"
             color: Osd.muted ? Theme.fgDim : Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 13
             font.features: { "tnum": 1 }
         }
 

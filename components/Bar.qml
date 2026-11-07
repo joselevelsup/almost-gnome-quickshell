@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 
 // GNOME 50 top bar: workspace indicator on the left, clock in the center,
-// system monitor, tray and system status on the right. Also hosts the background, every
+// system monitor, tray and system status on the right. Also hosts every
 // popup, the dock and the OSD.
 PanelWindow {
     id: bar
@@ -21,7 +21,9 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.barBg
+        color: Settings.options.blur ? "transparent" : Theme.barBg
+
+        BlurBackdrop { tint: Theme.withAlpha("#000000", 0.35) }
 
         Workspaces {
             anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
@@ -39,7 +41,7 @@ PanelWindow {
                 bottom: parent.bottom
             }
             anchors.rightMargin: 6
-            spacing: 4
+            spacing: 0
 
             SystemMonitor {}
             Tray {}
@@ -54,18 +56,18 @@ PanelWindow {
         enabled: Caffeine.enabled
     }
 
-    Background {}
-    DismissLayer {}
+    // Pinned to the bar's screen; otherwise the compositor picks one.
+    DismissLayer { screen: bar.screen }
     // Hot corners (hover with a delay, see HotCorner.qml): top-left opens the
     // overview, bottom-left the app grid.
-    HotCorner { edge: "top"; action: "overview" }
-    HotCorner { edge: "bottom"; action: "apps" }
-    CalendarPopup {}
-    QuickSettingsPanel {}
-    OverviewPopup {}
-    AltTabPopup {}
-    NotificationToasts {}
-    OsdPopup {}
-    Dock {}
-    ScreenshotPopup {}
+    HotCorner { screen: bar.screen; edge: "top"; action: "overview" }
+    HotCorner { screen: bar.screen; edge: "bottom"; action: "apps" }
+    CalendarPopup { screen: bar.screen }
+    QuickSettingsPanel { screen: bar.screen }
+    OverviewPopup { screen: bar.screen }
+    AltTabPopup { screen: bar.screen }
+    NotificationToasts { screen: bar.screen }
+    OsdPopup { screen: bar.screen }
+    Dock { screen: bar.screen }
+    ScreenshotPopup { screen: bar.screen }
 }

@@ -30,7 +30,7 @@ PopupWindow {
     anchor.margins.top: -10
     visible: false
     color: "transparent"
-    implicitWidth: 240
+    implicitWidth: 264
     implicitHeight: col.implicitHeight + 12
 
     grabFocus: true
@@ -63,7 +63,7 @@ PopupWindow {
                 text: menu.entry ? menu.entry.name : (menu.app ? menu.app.appId : "")
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 13
+                font.pixelSize: 15
                 font.weight: Font.Bold
                 elide: Text.ElideRight
             }

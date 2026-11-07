@@ -13,8 +13,8 @@ Rectangle {
     property bool dot: false
     signal clicked
 
-    implicitWidth: Math.max(32, content.implicitWidth + 16)
-    implicitHeight: 32
+    implicitWidth: Math.max(36, content.implicitWidth + 16)
+    implicitHeight: 36
     radius: Theme.radius - 6
     color: chip.selected ? Theme.accent : (mouse.containsMouse ? Theme.cardHoverBg : Theme.cardBg)
     opacity: chip.enabled || chip.selected ? 1 : 0.4
@@ -36,7 +36,7 @@ Rectangle {
             visible: chip.icon.length > 0
             anchors.verticalCenter: parent.verticalCenter
             name: chip.icon
-            size: 14
+            size: 16
             tint: chip.contentColor
         }
         Text {
@@ -45,7 +45,7 @@ Rectangle {
             text: chip.text
             color: chip.contentColor
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: 14
             font.weight: chip.selected ? Font.Bold : Font.Normal
         }
     }

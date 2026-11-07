@@ -39,7 +39,8 @@ FloatingWindow {
         { id: "appearance", label: "Appearance", icon: "color-select-symbolic" },
         { id: "background", label: "Background", icon: "preferences-desktop-wallpaper-symbolic" },
         { id: "dock", label: "Dock", icon: "view-app-grid-symbolic" },
-        { id: "nightlight", label: "Night Light", icon: "night-light-symbolic" }
+        { id: "nightlight", label: "Night Light", icon: "night-light-symbolic" },
+        { id: "power", label: "Power", icon: "power-profile-balanced-symbolic" }
     ]
     readonly property var current: pages.find(p => p.id === Settings.page) || pages[0]
 
@@ -258,6 +259,18 @@ FloatingWindow {
                         title: "Show battery percentage"
                         ToggleSwitch { checked: win.o.batteryPercent; onToggled: v => win.o.batteryPercent = v }
                     }
+                    SettingsRow {
+                        width: parent.width
+                        title: "Show on"
+                        subtitle: "The dock and popups follow the top bar"
+                        SegmentedControl {
+                            width: 260
+                            model: [{ label: "All", value: "" }]
+                                .concat(Quickshell.screens.map(s => ({ label: s.name, value: s.name })))
+                            current: win.o.barScreen
+                            onSelected: v => win.o.barScreen = v
+                        }
+                    }
                 }
 
                 // ================= Appearance =================
@@ -316,6 +329,12 @@ FloatingWindow {
                                 }
                             }
                         }
+                    }
+                    SettingsRow {
+                        width: parent.width
+                        title: "Blur"
+                        subtitle: "Blurred wallpaper behind the top bar and dock"
+                        ToggleSwitch { checked: win.o.blur; onToggled: v => win.o.blur = v }
                     }
                 }
 
@@ -378,6 +397,95 @@ FloatingWindow {
                             current: win.o.dockIconSize
                             onSelected: v => win.o.dockIconSize = v
                         }
+                    }
+                }
+
+                // ================= Power =================
+                // Values are GNOME's (gsettings), shared with GNOME Settings → Power.
+                Column {
+                    visible: win.current.id === "power"
+                    width: parent.width
+                    spacing: 8
+
+                    SectionLabel { text: "Power Saving" }
+                    SettingsRow {
+                        width: parent.width
+                        title: "Dim screen"
+                        subtitle: "Reduce brightness shortly before the screen blanks"
+                        ToggleSwitch { checked: Power.idleDim; onToggled: v => Power.set(Power.powerSchema, "idle-dim", v) }
+                    }
+                    SettingsRow {
+                        width: parent.width
+                        title: "Screen blank"
+                        subtitle: "Turn the screen off after a period of inactivity"
+                        SegmentedControl {
+                            width: 340
+                            model: [
+                                { label: "Never", value: "0" },
+                                { label: "1 min", value: "60" },
+                                { label: "2 min", value: "120" },
+                                { label: "5 min", value: "300" },
+                                { label: "10 min", value: "600" },
+                                { label: "15 min", value: "900" }
+                            ]
+                            current: String(Power.idleDelay)
+                            onSelected: v => Power.set(Power.sessionSchema, "idle-delay", v)
+                        }
+                    }
+                    SettingsRow {
+                        width: parent.width
+                        title: "Automatic power saver"
+                        subtitle: "Turn on Power Saver below 20% battery"
+                        ToggleSwitch {
+                            checked: Power.lowBatterySaver
+                            onToggled: v => Power.set(Power.powerSchema, "power-saver-profile-on-low-battery", v)
+                        }
+                    }
+
+                    SectionLabel { text: "Automatic Suspend"; topPadding: 12 }
+                    Repeater {
+                        model: [
+                            { title: "On battery power", key: "battery" },
+                            { title: "When plugged in", key: "ac" }
+                        ]
+                        delegate: SettingsRow {
+                            id: suspendRow
+                            required property var modelData
+                            readonly property bool battery: modelData.key === "battery"
+                            readonly property string type: battery ? Power.sleepBatteryType : Power.sleepAcType
+                            readonly property int delay: battery ? Power.sleepBattery : Power.sleepAc
+                            width: parent.width
+                            title: modelData.title
+                            SegmentedControl {
+                                width: 300
+                                model: [
+                                    { label: "Off", value: "0" },
+                                    { label: "15 min", value: "900" },
+                                    { label: "20 min", value: "1200" },
+                                    { label: "30 min", value: "1800" },
+                                    { label: "1 hour", value: "3600" }
+                                ]
+                                current: suspendRow.type === "nothing" || suspendRow.delay === 0 ? "0" : String(suspendRow.delay)
+                                // Off = type "nothing", like GNOME Settings.
+                                onSelected: v => {
+                                    var k = "sleep-inactive-" + suspendRow.modelData.key
+                                    if (v === "0") {
+                                        Power.set(Power.powerSchema, k + "-type", "nothing")
+                                    } else {
+                                        Power.set(Power.powerSchema, k + "-timeout", v)
+                                        Power.set(Power.powerSchema, k + "-type", "suspend")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    SectionLabel { text: "Screen Lock"; topPadding: 12 }
+                    SettingsRow {
+                        width: parent.width
+                        title: "Lock when the screen blanks"
+                        subtitle: "The screen always locks before the computer sleeps"
+                        ToggleSwitch { checked: Power.lockEnabled; onToggled: v => Power.set(Power.lockSchema, "lock-enabled", v) }
                     }
                 }
 

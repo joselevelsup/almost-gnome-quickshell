@@ -11,8 +11,8 @@ Rectangle {
     property color tint: Theme.fg
     signal clicked
 
-    implicitWidth: 80
-    implicitHeight: 64
+    implicitWidth: 88
+    implicitHeight: 70
     radius: Theme.radius - 2
     color: tile.checked ? (mouse.containsMouse ? Theme.accentHover : Theme.accent)
                         : (mouse.containsMouse ? Theme.cardHoverBg : Theme.cardBg)
@@ -33,7 +33,7 @@ Rectangle {
         SymbolicIcon {
             anchors.horizontalCenter: parent.horizontalCenter
             name: tile.icon
-            size: 18
+            size: 20
             tint: tile.contentColor
         }
         Text {
@@ -42,7 +42,7 @@ Rectangle {
             text: tile.label
             color: tile.contentColor
             font.family: Theme.fontFamily
-            font.pixelSize: 10
+            font.pixelSize: 12
             font.weight: tile.checked ? Font.DemiBold : Font.Normal
             elide: Text.ElideRight
         }

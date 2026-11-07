@@ -13,7 +13,7 @@ Rectangle {
     property bool checked: false
     signal toggled(bool value)
 
-    implicitHeight: 52
+    implicitHeight: 56
     implicitWidth: 160
     radius: height / 2
     color: root.checked ? (mouse.containsMouse ? Theme.accentHover : Theme.accent)
@@ -36,7 +36,7 @@ Rectangle {
         SymbolicIcon {
             name: root.icon
             source: root.iconSource
-            size: 16
+            size: 18
             tint: root.contentColor
             Layout.alignment: Qt.AlignVCenter
         }
@@ -50,7 +50,7 @@ Rectangle {
                 text: root.label
                 color: root.contentColor
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 14
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
@@ -61,7 +61,7 @@ Rectangle {
                 color: root.contentColor
                 opacity: 0.75
                 font.family: Theme.fontFamily
-                font.pixelSize: 10
+                font.pixelSize: 12
                 elide: Text.ElideRight
             }
         }

@@ -56,7 +56,7 @@ BarButton {
         text: Math.round(pill.battery.percentage * 100) + "%"
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 13
+        font.pixelSize: 15
         font.weight: Font.Bold
         font.features: { "tnum": 1 }
     }

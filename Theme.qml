@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
 // GNOME 50 / Adwaita dark palette and visual tokens. Dark only; the accent
@@ -50,8 +51,9 @@ QtObject {
 
     // The GNOME top bar is solid black.
     readonly property color barBg:     "#000000"
-    readonly property color popupBg:   "#2e2e32"
-    readonly property color toastBg:   "#2e2e32"
+    // Popups take the wallpaper's hue, kept dark so white text stays readable.
+    readonly property color popupBg:   theme.wallpaperSurface
+    readonly property color toastBg:   theme.wallpaperSurface
     readonly property color border:    withAlpha("#ffffff", 0.08)
     readonly property color hoverBg:   withAlpha("#ffffff", 0.12)
     readonly property color activeBg:  withAlpha(theme.accent, 0.30)
@@ -62,6 +64,27 @@ QtObject {
     // Text/icons on top of the accent color (active tiles).
     readonly property color accentFg:  "#ffffff"
     readonly property color accentHover: Qt.lighter(theme.accent, 1.12)
+
+    // ---------------------------------------------------------------
+    // Wallpaper colors
+    // ---------------------------------------------------------------
+    property ColorQuantizer wallpaperColors: ColorQuantizer {
+        source: Wallpaper.current ? "file://" + Wallpaper.current : ""
+        depth: 3 // 2^3 = 8 colors
+        rescaleSize: 64
+    }
+    // Hue of the most saturated color (near-black ones skipped: their
+    // saturation is noise); Adwaita gray until the wallpaper is read.
+    readonly property color wallpaperSurface: {
+        var best = null
+        var cols = theme.wallpaperColors.colors
+        for (var i = 0; i < cols.length; i++) {
+            var c = cols[i]
+            if (c.hslLightness < 0.08) continue
+            if (!best || c.hslSaturation > best.hslSaturation) best = c
+        }
+        return best ? Qt.hsla(best.hslHue, Math.min(best.hslSaturation, 0.35), 0.17, 1) : "#2e2e32"
+    }
 
     // ---------------------------------------------------------------
     // gsettings accent-color watcher

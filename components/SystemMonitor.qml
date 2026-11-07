@@ -60,7 +60,7 @@ BarButton {
         text: "CPU " + Math.round(mon.cpu * 100) + "%"
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 13
+        font.pixelSize: 15
         font.weight: Font.Bold
         font.features: { "tnum": 1 }
     }
@@ -69,7 +69,7 @@ BarButton {
         text: "RAM " + mon.ramUsed.toFixed(1) + " GB"
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 13
+        font.pixelSize: 15
         font.weight: Font.Bold
         font.features: { "tnum": 1 }
     }

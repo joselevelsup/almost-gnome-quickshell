@@ -19,6 +19,10 @@ QtObject {
         property bool clockWeekday: false
         property bool clockSeconds: false
         property bool batteryPercent: false
+        // Monitor name (e.g. "DP-1") for the top bar; "" = every monitor.
+        property string barScreen: ""
+        // Blurred wallpaper behind the bar and dock.
+        property bool blur: false
         property bool dockAutohide: true
         property string dockIconSize: "default" // small | default | large
         property string nightFrom: "20:00"

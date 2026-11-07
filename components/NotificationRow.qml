@@ -18,8 +18,8 @@ Item {
     property bool elevated: false
     signal dismissRequested
 
-    implicitHeight: layout.implicitHeight + 16
-    implicitWidth: 280
+    implicitHeight: layout.implicitHeight + 28
+    implicitWidth: 310
 
     Rectangle {
         anchors.fill: parent
@@ -33,17 +33,18 @@ Item {
     RowLayout {
         id: layout
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 8
+        anchors.margins: 14
+        spacing: 12
 
         SymbolicIcon {
             name: root.appIcon.length > 0 ? root.appIcon : "dialog-information-symbolic"
+            size: 24
             Layout.alignment: Qt.AlignTop
         }
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 2
+            spacing: 4
 
             RowLayout {
                 Layout.fillWidth: true
@@ -51,7 +52,7 @@ Item {
                     text: root.appName
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 13
                     Layout.fillWidth: true
                 }
                 Text {
@@ -59,14 +60,14 @@ Item {
                     text: root.time ? Qt.formatTime(root.time, "hh:mm") : ""
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 13
                 }
             }
             Text {
                 text: root.summary
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 15
                 font.weight: Font.DemiBold
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
@@ -76,7 +77,8 @@ Item {
                 text: root.body
                 color: Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 14
+                lineHeight: 1.15
                 wrapMode: Text.WordWrap
                 maximumLineCount: 3
                 elide: Text.ElideRight
@@ -86,10 +88,10 @@ Item {
 
         BarButton {
             spacing: 0
-            implicitWidth: 22
-            implicitHeight: 22
+            implicitWidth: 26
+            implicitHeight: 26
             Layout.alignment: Qt.AlignTop
-            SymbolicIcon { name: "window-close-symbolic"; size: 11; tint: Theme.fgDim }
+            SymbolicIcon { name: "window-close-symbolic"; size: 13; tint: Theme.fgDim }
             onClicked: root.dismissRequested()
         }
     }

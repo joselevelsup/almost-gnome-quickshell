@@ -62,7 +62,7 @@ PanelWindow {
                             text: tile.modelData.title
                             color: index === Switcher.winIndex ? Theme.accent : Theme.fg
                             font.family: Theme.fontFamily
-                            font.pixelSize: 10
+                            font.pixelSize: 12
                             elide: Text.ElideRight
                         }
                     }

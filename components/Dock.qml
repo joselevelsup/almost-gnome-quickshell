@@ -101,9 +101,11 @@ PanelWindow {
         width: row.implicitWidth + 12
         height: dock.tile + 12
         radius: Theme.radius + 4
-        color: Theme.popupBg
+        color: Settings.options.blur ? "transparent" : Theme.popupBg
         border.width: 1
         border.color: Theme.border
+
+        BlurBackdrop {}
         opacity: dock.revealed ? 1 : 0
 
         Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }

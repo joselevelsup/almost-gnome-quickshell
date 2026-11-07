@@ -176,15 +176,27 @@ To develop with live reload, run it straight from the clone:
 
 ## Keybindings (IPC)
 
+Every command the shell accepts (also listed live by `qs ipc show`):
+
 | Command | Action |
 |---|---|
-| `qs ipc call overview toggle` | Open/close the overview (also `open`, `close`, `apps`) |
+| `qs ipc call overview toggle` | Open/close the overview (from the app grid, switches to the workspace mosaic) |
+| `qs ipc call overview open` | Open the overview |
+| `qs ipc call overview close` | Close the overview |
+| `qs ipc call overview apps` | Open the app grid |
 | `qs ipc call screenshot toggle` | Open/close the screenshot panel |
-| `qs ipc call lock lock` | Lock the screen |
+| `qs ipc call lock lock` | Lock the screen (starts `lock.qml`) |
 | `qs ipc call settings open` | Open Settings |
 | `qs ipc call settings openPage <page>` | Open Settings on a page: `datetime`, `topbar`, `appearance`, `background`, `dock`, `nightlight` |
+| `qs ipc call settings close` | Close Settings |
 | `qs ipc call wallpaper toggle` | Open Settings on the Background page |
-| `qs ipc call winswitch next\|prev\|confirm\|cancel` | Alt+Tab switcher |
+| `qs ipc call winswitch next` | Alt+Tab: show the switcher / select the next window |
+| `qs ipc call winswitch prev` | Alt+Tab: select the previous window |
+| `qs ipc call winswitch confirm` | Alt+Tab: focus the selected window and close (bind to Alt release) |
+| `qs ipc call winswitch cancel` | Alt+Tab: close without switching |
+
+The lock screen itself is a separate instance with no IPC; start it directly
+with `qs -d -p ~/.config/quickshell/lock.qml`.
 
 Example Sway config:
 

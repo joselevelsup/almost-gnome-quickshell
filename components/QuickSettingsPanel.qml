@@ -15,7 +15,7 @@ PopupCard {
     id: popup
     popupName: "quicksettings"
     align: "right"
-    cardWidth: 360
+    cardWidth: 400
 
     property bool powerMenuOpen: false
     property bool outputsOpen: false
@@ -152,7 +152,7 @@ PopupCard {
                     text: popup.hasBattery ? Math.round(popup.battery.percentage * 100) + "%" : ""
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 13
                     font.weight: Font.DemiBold
                 }
             }
@@ -363,6 +363,6 @@ PopupCard {
         text: "Requires power-profiles-daemon"
         color: Theme.fgDim
         font.family: Theme.fontFamily
-        font.pixelSize: 10
+        font.pixelSize: 12
     }
 }

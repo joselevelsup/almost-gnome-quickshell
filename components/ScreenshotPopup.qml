@@ -24,7 +24,7 @@ PanelWindow {
     margins.bottom: 88
     exclusiveZone: 0
     color: "transparent"
-    implicitWidth: 420
+    implicitWidth: 460
     implicitHeight: card.implicitHeight
 
     // Preferences: kept while the shell runs.
@@ -123,7 +123,7 @@ PanelWindow {
                     text: "Screenshot"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     font.weight: Font.Bold
                 }
                 IconButton {
@@ -156,7 +156,7 @@ PanelWindow {
                 text: root.hint
                 color: Theme.fgDim
                 font.family: Theme.fontFamily
-                font.pixelSize: 10
+                font.pixelSize: 12
                 elide: Text.ElideRight
             }
 
@@ -231,7 +231,7 @@ PanelWindow {
                     horizontalAlignment: Text.AlignRight
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 12
                     lineHeight: 1.2
                 }
             }
