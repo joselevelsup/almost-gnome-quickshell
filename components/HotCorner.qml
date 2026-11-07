@@ -3,17 +3,15 @@ import Quickshell.Wayland
 import QtQuick
 import ".."
 
-// Hot corner: a tiny surface in a screen corner that fires an action when
-// the pointer stays inside for `delay` ms (passing by does nothing, as in
-// GNOME). Created from Bar.qml, one per corner; it won't reopen a popup the
-// user just closed.
+// Hot corner: a tiny surface in the bottom-left screen corner that opens the
+// app grid when the pointer stays inside for `delay` ms (passing by does
+// nothing, as in GNOME). Created from Bar.qml; it won't reopen a popup the
+// user just closed. The top-left corner is umbriel's (its overview).
 PanelWindow {
     id: hc
 
     // "top" or "bottom"; always the left corner of the screen.
-    property string edge: "top"
-    // "overview" opens the workspace mosaic; "apps" the app grid.
-    property string action: "overview"
+    property string edge: "bottom"
 
     readonly property int delay: 180
 
@@ -49,15 +47,8 @@ PanelWindow {
             // After closing a popup the pointer is often still in the corner;
             // ignore it briefly so it doesn't reopen right away.
             if (Date.now() - PopupManager.lastChange < 500) return
-            if (hc.action === "apps") {
-                if (PopupManager.current === "overview" && PopupManager.appsMode) return
-                PopupManager.openApps()
-            } else {
-                // Doesn't toggle: hitting the corner with the overview open
-                // doesn't close it.
-                if (PopupManager.current === "overview") return
-                PopupManager.open("overview")
-            }
+            // Doesn't toggle: hitting the corner with the grid open doesn't close it.
+            if (PopupManager.current !== "launcher") PopupManager.open("launcher")
         }
     }
 

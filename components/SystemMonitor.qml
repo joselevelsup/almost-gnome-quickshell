@@ -1,4 +1,3 @@
-import Quickshell.I3
 import Quickshell.Io
 import QtQuick
 import ".."
@@ -74,6 +73,6 @@ BarButton {
         font.features: { "tnum": 1 }
     }
 
-    // Through Sway so the app isn't a child of the shell (see AppLauncher.qml).
-    onClicked: I3.dispatch("exec gnome-system-monitor")
+    // Through umbriel so the app isn't a child of the shell (see AppLauncher.qml).
+    onClicked: AppLauncher.spawn(["gnome-system-monitor"])
 }

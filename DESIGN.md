@@ -24,7 +24,7 @@ it and update this document before breaking them.
 
 ### Top bar layout
 
-- **Left:** workspace indicator pill (opens the overview). No Activities label.
+- **Left:** workspace indicator pill (opens umbriel's overview). No Activities label.
 - **Center:** clock (opens calendar/notifications).
 - **Right:** system tray, then status icons (open quick settings).
 
@@ -48,7 +48,7 @@ components, except for the exceptions listed below.
 | `barBg` / `popupBg` / `toastBg` | Bar, popup and toast background |
 | `cardBg` / `cardHoverBg` | Surface of tiles, buttons and cards **inside** a popup |
 | `hoverBg` | Hover of flat rows (`ActionRow`, inactive segments) |
-| `activeBg` | Selected item inside the overview/popups (bar buttons use white, like GNOME) |
+| `activeBg` | Selected item inside the app grid/popups (bar buttons use white, like GNOME) |
 | `trackBg` | Track of sliders and switches that are off |
 | `border` | 1 px border of popups and separators |
 
@@ -56,7 +56,7 @@ Allowed exceptions: `#ffffff` for slider/switch knobs and text over images;
 `#000000` with alpha for gradients/dimming over images (always via
 `Theme.withAlpha`).
 
-Sway has no blur, so surfaces are opaque, like vanilla GNOME: the top bar is
+Surfaces are opaque, like vanilla GNOME: the top bar is
 solid black like GNOME, and popups use opaque Adwaita dark surfaces.
 
 > ⚠️ No property may start with `on` + uppercase (`onAccent`): QML interprets
@@ -147,8 +147,8 @@ where it's used.
 - Every clickable element gets `cursorShape: Qt.PointingHandCursor`.
 - Controls are **controlled**: they emit `toggled(value)`/`clicked()` and don't
   overwrite their own `checked`; the real value comes back by binding from the
-  service (Networking, Bluetooth, Sway…).
-- After an action on Sway, let `Sway.qml` refresh from its IPC events so the UI reflects reality
+  service (Networking, Bluetooth, Umbriel…).
+- After an action on umbriel, let `Umbriel.qml` refresh from its `subscribe` events so the UI reflects reality
   and not an assumption.
 - When a popup closes, reset its transient states (expanders, hover).
 - For hover over areas with interactive children, use `HoverHandler` instead of

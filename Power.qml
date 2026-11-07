@@ -1,7 +1,6 @@
 pragma Singleton
 import Quickshell
 import Quickshell.Io
-import Quickshell.I3
 import Quickshell.Wayland
 import Quickshell.Services.UPower
 import QtQuick
@@ -10,7 +9,7 @@ import QtQuick
 // before any sleep, and Power Saver on low battery. The settings are
 // GNOME's own (gsettings), so GNOME Settings → Power and our Settings →
 // Power edit the same values. Idle timers respect inhibitors (Caffeine,
-// Sway's inhibit_idle). Created at startup from shell.qml.
+// idle-inhibit from apps). Created at startup from shell.qml.
 // A Singleton (not QtObject) whose monitors are children: Quickshell only
 // activates IdleMonitors that get its reload hook, which Singleton passes
 // to children. Each monitor sits in a Variants keyed on its timeout, so it
@@ -110,11 +109,11 @@ Singleton {
             timeout: modelData
             onIsIdleChanged: {
                 if (isIdle) {
-                    I3.dispatch("output * power off")
+                    Umbriel.msg(["dpms-off"])
                     if (power.lockEnabled) power.lockTimer.restart()
                 } else {
                     power.lockTimer.stop()
-                    I3.dispatch("output * power on")
+                    Umbriel.msg(["dpms-on"])
                     power.undim()
                 }
             }

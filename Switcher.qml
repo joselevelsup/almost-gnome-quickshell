@@ -2,7 +2,7 @@ pragma Singleton
 import Quickshell.Io
 import QtQuick
 
-// Alt+Tab window switcher state (most recently used first). Sway drives
+// Alt+Tab window switcher state (most recently used first). Keybinds drive
 // it over IPC: `qs ipc call winswitch next|prev` while Alt+Tab is held,
 // `confirm` when Alt is released (see README for the bindings).
 QtObject {
@@ -14,7 +14,7 @@ QtObject {
 
     function winStep(delta) {
         if (!switcher.winActive) {
-            var all = Sway.windows
+            var all = Umbriel.windows
             if (all.length === 0) return
             switcher.winList = all
             switcher.winIndex = all.length > 1 ? (delta > 0 ? 1 : all.length - 1) : 0
@@ -25,7 +25,7 @@ QtObject {
     }
     function winFinish(apply) {
         if (apply && switcher.winActive && switcher.winList.length > 0)
-            Sway.focusWindow(switcher.winList[switcher.winIndex].id)
+            Umbriel.focusWindow(switcher.winList[switcher.winIndex].id)
         switcher.winActive = false
     }
 

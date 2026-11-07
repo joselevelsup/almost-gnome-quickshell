@@ -1,6 +1,5 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.I3
 import Quickshell.Widgets
 import QtQuick
 import ".."
@@ -69,8 +68,7 @@ PanelWindow {
     }
 
     // ---- Visibility ----
-    readonly property bool workspaceEmpty: I3.focusedWorkspace !== null
-        && !Sway.windows.some(w => w.ws === I3.focusedWorkspace.name)
+    readonly property bool workspaceEmpty: Umbriel.focusedWorkspace !== null && !Umbriel.focusedWorkspace.occupied
     property bool hot: false
     readonly property bool revealed: !Settings.options.dockAutohide || hot || workspaceEmpty || menu.visible
     // Icon tile size from Settings.
@@ -185,7 +183,7 @@ PanelWindow {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onContainsMouseChanged: tooltip.target = containsMouse ? gridBtn : (tooltip.target === gridBtn ? null : tooltip.target)
-                    onClicked: PopupManager.current === "overview" && PopupManager.appsMode ? PopupManager.close() : PopupManager.openApps()
+                    onClicked: PopupManager.open("launcher")
                 }
             }
         }

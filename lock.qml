@@ -9,7 +9,7 @@ import "components"
 // GNOME-style lock screen, run as its own Quickshell instance:
 //   qs -d -p ~/.config/quickshell/lock.qml
 // Kept out of the shell so a shell crash or config reload can't touch it.
-// Locks on start through ext-session-lock (Sway keeps everything covered
+// Locks on start through ext-session-lock (the compositor keeps everything covered
 // even if this process dies) and exits once unlocked.
 ShellRoot {
     id: root
@@ -42,7 +42,7 @@ ShellRoot {
         onCompleted: result => {
             if (result === PamResult.Success) {
                 lock.locked = false
-                // Give the unlock request time to reach Sway: exiting while
+                // Give the unlock request time to reach the compositor: exiting while
                 // still locked would leave the session locked for good.
                 quitTimer.start()
                 return

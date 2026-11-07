@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.I3
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
@@ -20,17 +19,8 @@ FloatingWindow {
     color: "#222226"
 
     onClosed: Settings.windowOpen = false
-    // Sway would tile it; float and center it like a GNOME app window.
-    onVisibleChanged: if (visible) {
-        floatTimer.restart()
-        if (win.zones.length === 0) zoneProc.running = true
-    }
-    Timer {
-        id: floatTimer
-        interval: 50
-        onTriggered: I3.dispatch("[pid=" + Quickshell.processId + " title=\"^Settings$\"] floating enable, resize set "
-            + win.implicitWidth + " " + win.implicitHeight + ", move position center")
-    }
+    // Floated and centered by a window rule in ~/.config/umbriel/config.toml.
+    onVisibleChanged: if (visible && win.zones.length === 0) zoneProc.running = true
 
     readonly property var o: Settings.options
     readonly property var pages: [

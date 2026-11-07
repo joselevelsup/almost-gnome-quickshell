@@ -1,6 +1,5 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.I3
 import QtQuick
 import QtQuick.Layouts
 import ".."
@@ -39,7 +38,7 @@ PanelWindow {
     ]
     readonly property string hint: root.mode === "region" ? "Drag to select an area, or click for the whole monitor"
         : root.mode === "window" ? "You'll click the window next"
-        : "Captures monitor " + (I3.focusedMonitor ? I3.focusedMonitor.name : "")
+        : "Captures monitor " + Umbriel.focusedOutput
 
     function cycleMode(delta) {
         var i = root.modes.findIndex(m => m.value === root.mode)
@@ -55,8 +54,8 @@ PanelWindow {
         "case \"$mode\" in " +
         // -o: a click without dragging takes the whole monitor instead of a point.
         "  region) g=$(sl -d -o) || exit 0 ;; " +
-        "  window) g=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) " +
-        "       | .rect | \"\\(.x),\\(.y) \\(.width)x\\(.height)\"' | sl -r) || exit 0 ;; " +
+        "  window) g=$(umbriel windows --json | jq -r '.[] | select(.visible) " +
+        "       | \"\\(.x),\\(.y) \\(.w)x\\(.h)\"' | sl -r) || exit 0 ;; " +
         "esac; " +
         "[ \"$delay\" -gt 0 ] && sleep \"$delay\"; " +
         ". \"${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs\" 2>/dev/null; " +
@@ -68,7 +67,7 @@ PanelWindow {
         "notify-send -a 'Screenshot' -i \"$f\" 'Screenshot captured' 'You can paste the image from the clipboard.'"
 
     function capture() {
-        var mon = I3.focusedMonitor ? I3.focusedMonitor.name : ""
+        var mon = Umbriel.focusedOutput
         var acc = String(Theme.accent).replace("#", "").slice(-6)
         PopupManager.close()
         Quickshell.execDetached(["sh", "-c", root.script, "sh",

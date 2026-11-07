@@ -5,12 +5,13 @@
 
 # QuickShell Config
 
-A desktop shell for **Sway** that looks as close to vanilla **GNOME 50** as
-possible, built with [Quickshell](https://quickshell.outfoxxed.me). It's dark
-only, uses opaque Adwaita surfaces, symbolic icons and the system accent color,
-and has the parts GNOME users expect: an overview with app search, quick
-settings, OSDs, notifications and a screenshot UI. It also has a dock, which
-GNOME doesn't.
+A desktop shell for the **umbriel** Wayland compositor that looks as close to
+vanilla **GNOME 50** as possible, built with
+[Quickshell](https://quickshell.outfoxxed.me). It's dark only, uses opaque
+Adwaita surfaces, symbolic icons and the system accent color, and has the parts
+GNOME users expect: an app grid with search, quick settings, OSDs,
+notifications and a screenshot UI. The workspace overview is umbriel's own.
+It also has a dock, which GNOME doesn't.
 
 > The screenshots below are from the original Hyprland version and are out of
 > date (light/translucent styling, Spanish UI).
@@ -22,29 +23,25 @@ GNOME doesn't.
 ### Top bar
 
 The GNOME 50 layout:
-- **Left:** the workspace indicator pill (opens the overview).
+- **Left:** the workspace indicator pill (opens umbriel's overview).
 - **Center:** the clock (opens the calendar and notifications).
 - **Right:** the system tray, then the status icons (open quick settings).
 
 The bar is solid black.
 
-### Overview and app search
+### App grid and search
 
-A mosaic of every workspace over the blurred wallpaper, with each window drawn
-at its real position. Click a window to focus it, click a card to switch
-workspace, or drag a window onto another card (or onto **New workspace**) to
-move it. Start typing to search applications; <kbd>Enter</kbd> launches the
-selected one.
+Every installed application over the blurred wallpaper, alphabetical, in pages
+like GNOME: flip them with a short two‑finger swipe, the mouse wheel, the page
+dots or the arrow keys. Start typing to search; <kbd>Enter</kbd> launches the
+selected app. Apps are started through `umbriel msg spawn`, so they belong to
+the compositor and survive a shell restart.
 
-![Overview](docs/screenshots/overview.png)
-![App search](docs/screenshots/overview-search.png)
+### Hot corner
 
-### Hot corners
-
-Two hot corners, GNOME style: keep the pointer in the corner for ~180 ms and
-the action fires (passing by does nothing). The top‑left corner opens the
-overview; the bottom‑left one opens the app grid (every installed application,
-alphabetical and scrollable — keep typing to filter).
+GNOME style: keep the pointer in the bottom‑left corner for ~180 ms and the app
+grid opens (passing by does nothing). The top‑left corner is umbriel's own
+(`[hot_corners.top_left]` in its config) and opens its overview.
 
 ### Quick settings
 
@@ -95,9 +92,9 @@ can also edit that file by hand; the shell picks up the changes live.
 GNOME-style: blurred wallpaper with a big clock; click or start typing to get
 your avatar, name and password field. It runs as its own Quickshell instance
 (`lock.qml`), so a shell crash or config reload can't break it, and it uses
-Sway's secure session lock: if it ever crashes, the screen stays locked rather
-than unlocking. Lock from the button in Quick Settings, `qs ipc call lock lock`,
-or start it directly (best for swayidle, since it doesn't need the shell):
+the compositor's secure session lock (ext-session-lock): if it ever crashes,
+the screen stays locked rather than unlocking. Lock from the button in Quick
+Settings, `qs ipc call lock lock`, or start it directly:
 
 ```
 qs -d -p ~/.config/quickshell/lock.qml
@@ -106,8 +103,8 @@ qs -d -p ~/.config/quickshell/lock.qml
 **If you ever get stuck** on a locked, blank screen, switch to another TTY
 (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd>), log in, and run
 `pkill -f lock.qml`, then `qs -d -p ~/.config/quickshell/lock.qml` to get a
-fresh lock screen to unlock (`swaymsg` needs `SWAYSOCK` set to your session's
-socket in that TTY).
+fresh lock screen to unlock (it needs `WAYLAND_DISPLAY` set to your
+session's socket in that TTY).
 
 ### Wallpaper
 
@@ -136,7 +133,7 @@ clipboard and announced with a notification.
 
 - [Quickshell](https://quickshell.outfoxxed.me) **0.3.0 or newer** (checked against 0.3.2, the latest).
   Install it from your distribution's packages.
-- **Sway**, plus `swaymsg` and `gtk-launch` (from GTK 3) to launch apps
+- **umbriel** (its `umbriel` CLI is used for windows, workspaces and launching), plus `gtk-launch` (from GTK 3)
 - PipeWire with `wpctl`, [`light`](https://github.com/haikarainen/light) for brightness, `gsettings` + `gsettings-desktop-schemas`
 - `grim`, `slurp`, `wl-clipboard`, `jq` and `notify-send` for screenshots
 - Optional: `wlsunset` (night light), `power-profiles-daemon` (power mode),
@@ -145,15 +142,16 @@ clipboard and announced with a notification.
 
 ## Install
 
-Symlink or copy the repo to `~/.config/quickshell`, and start it from your Sway
-config:
+Symlink or copy the repo to `~/.config/quickshell`, and start it from your
+umbriel config:
 
 ```bash
 ln -s /path/to/this/repo ~/.config/quickshell
 ```
 
-```
-exec qs
+```toml
+[general]
+autostart = ["qs"]
 ```
 
 To develop with live reload, run it straight from the clone:
@@ -161,9 +159,8 @@ To develop with live reload, run it straight from the clone:
 
 ### Things to watch out for
 
-- **Remove swaybar and swaybg.** Delete or comment out the `bar { … }` block
-  and any `output * bg …` line in your Sway config: the shell draws both the
-  bar and the wallpaper.
+- **No other bar or wallpaper.** The shell draws both the bar and the
+  wallpaper, so don't autostart another one (e.g. Noctalia) alongside it.
 - **Only one notification daemon.** If mako, dunst or swaync is installed and
   D‑Bus‑activatable, it can take `org.freedesktop.Notifications` before the
   shell does; toasts and history then stay empty, and the log shows
@@ -180,10 +177,9 @@ Every command the shell accepts (also listed live by `qs ipc show`):
 
 | Command | Action |
 |---|---|
-| `qs ipc call overview toggle` | Open/close the overview (from the app grid, switches to the workspace mosaic) |
-| `qs ipc call overview open` | Open the overview |
-| `qs ipc call overview close` | Close the overview |
-| `qs ipc call overview apps` | Open the app grid |
+| `qs ipc call launcher toggle` | Open/close the app grid |
+| `qs ipc call launcher open` | Open the app grid |
+| `qs ipc call launcher close` | Close the app grid |
 | `qs ipc call screenshot toggle` | Open/close the screenshot panel |
 | `qs ipc call lock lock` | Lock the screen (starts `lock.qml`) |
 | `qs ipc call settings open` | Open Settings |
@@ -198,22 +194,16 @@ Every command the shell accepts (also listed live by `qs ipc show`):
 The lock screen itself is a separate instance with no IPC; start it directly
 with `qs -d -p ~/.config/quickshell/lock.qml`.
 
-Example Sway config:
+Example umbriel keybinds (`[keybinds]` in `~/.config/umbriel/config.toml`):
 
+```toml
+"Mod+W" = "spawn qs ipc call launcher toggle"
+"Mod+P" = "spawn qs ipc call screenshot toggle"
+"Mod+Escape" = "spawn qs ipc call lock lock"
 ```
-bindsym --release Super_L exec qs ipc call overview toggle
-bindsym $mod+a exec qs ipc call overview apps
-bindsym Print exec qs ipc call screenshot toggle
-bindsym Mod1+Tab exec qs ipc call winswitch next
-bindsym Mod1+Shift+Tab exec qs ipc call winswitch prev
-bindsym --release Alt_L exec qs ipc call winswitch confirm
-bindsym $mod+Escape exec qs -d -p ~/.config/quickshell/lock.qml
 
-# Lock after 5 minutes idle and before suspend.
-exec swayidle -w \
-    timeout 300 'qs -d -p ~/.config/quickshell/lock.qml' \
-    before-sleep 'qs -d -p ~/.config/quickshell/lock.qml'
-```
+Idle dimming, screen blanking and locking before sleep are handled by the
+shell itself (`Power.qml`), with timings from GNOME's power settings.
 
 ## State
 
@@ -235,21 +225,21 @@ qmldir                Module definition (singletons)
 Theme.qml             Colors, fonts and layout tokens; follows the accent live
 Settings.qml          User settings (settings.json) + Settings window state
 Clock.qml             Current time in the timezone chosen in Settings
-Sway.qml              Window list from `swaymsg -t get_tree`, live via IPC events
-PopupManager.qml      Which popup is open; overview/screenshot/settings IPC
+Umbriel.qml           Windows and workspaces from `umbriel subscribe`, plus `umbriel msg`
+PopupManager.qml      Which popup is open; launcher/screenshot/settings IPC
 Notifications.qml     Notification server + history
 Switcher.qml          Alt+Tab state and IPC
 Wallpaper.qml         Current wallpaper, saved across restarts
 Osd.qml               Volume/brightness OSD state
 DockPins.qml          Pinned dock apps
 Caffeine.qml          Idle inhibitor state
-AppLauncher.qml       Launches apps through Sway's exec
+AppLauncher.qml       Launches apps through `umbriel msg spawn`
 components/
   Bar.qml             Top bar; hosts the background, every popup, dock and OSD
   Background.qml      Desktop wallpaper with a GNOME-style crossfade
   Workspaces.qml      GNOME 50 workspace indicator pill
-  HotCorner.qml       Hover‑with‑delay hot corners (overview / app grid)
-  OverviewPopup.qml   Workspace overview + app search + app grid
+  HotCorner.qml       Hover‑with‑delay hot corner (app grid)
+  AppGridPopup.qml    App grid in pages + app search
   QuickSettingsPanel.qml
   CalendarPopup.qml   Calendar, notifications, MediaPlayer
   Dock.qml            Dock (DockItem, DockMenu)

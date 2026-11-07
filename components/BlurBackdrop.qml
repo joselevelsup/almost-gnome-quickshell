@@ -5,7 +5,7 @@ import QtQuick.Effects
 import ".."
 
 // Static blur, like Blur my Shell's static mode: the blurred wallpaper slice
-// under the parent, tinted. Sway can't blur what's behind a surface, so the
+// under the parent, tinted. The compositor isn't asked to blur behind it, so the
 // slice is lined up from where the host window sits on screen. Put it in a
 // Rectangle whose color is transparent while Settings.options.blur is on; it
 // draws below the parent's border. Only for PanelWindow hosts.

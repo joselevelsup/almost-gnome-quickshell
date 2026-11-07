@@ -58,13 +58,11 @@ PanelWindow {
 
     // Pinned to the bar's screen; otherwise the compositor picks one.
     DismissLayer { screen: bar.screen }
-    // Hot corners (hover with a delay, see HotCorner.qml): top-left opens the
-    // overview, bottom-left the app grid.
-    HotCorner { screen: bar.screen; edge: "top"; action: "overview" }
-    HotCorner { screen: bar.screen; edge: "bottom"; action: "apps" }
+    // Bottom-left hot corner opens the app grid (see HotCorner.qml).
+    HotCorner { screen: bar.screen; edge: "bottom" }
     CalendarPopup { screen: bar.screen }
     QuickSettingsPanel { screen: bar.screen }
-    OverviewPopup { screen: bar.screen }
+    AppGridPopup { screen: bar.screen }
     AltTabPopup { screen: bar.screen }
     NotificationToasts { screen: bar.screen }
     OsdPopup { screen: bar.screen }
