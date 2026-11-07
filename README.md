@@ -5,18 +5,14 @@
 
 # QuickShell Config
 
-A desktop shell for the **umbriel** Wayland compositor that looks as close to
-vanilla **GNOME 50** as possible, built with
-[Quickshell](https://quickshell.outfoxxed.me). It's dark only, uses opaque
-Adwaita surfaces, symbolic icons and the system accent color, and has the parts
-GNOME users expect: an app grid with search, quick settings, OSDs,
-notifications and a screenshot UI. The workspace overview is umbriel's own.
-It also has a dock, which GNOME doesn't.
-
-> The screenshots below are from the original Hyprland version and are out of
-> date (light/translucent styling, Spanish UI).
-
-![Desktop with bar and dock](docs/screenshots/desktop.png)
+A GNOME 50–style desktop shell for the [umbriel](https://docs.noctalia.dev/umbriel/)
+Wayland compositor, built with [Quickshell](https://quickshell.outfoxxed.me).
+It's dark only, with opaque Adwaita surfaces, symbolic icons and the system
+accent color. It has a top bar, a paged app grid with search, a dock, quick
+settings, a calendar with notifications, OSDs, a lock screen and a screenshot
+panel. Window management and the workspace overview are left to umbriel: the
+shell reads windows and workspaces from `umbriel subscribe` and sends
+commands with `umbriel msg`.
 
 ## Features
 
@@ -25,7 +21,8 @@ It also has a dock, which GNOME doesn't.
 The GNOME 50 layout:
 - **Left:** the workspace indicator pill (opens umbriel's overview).
 - **Center:** the clock (opens the calendar and notifications).
-- **Right:** the system tray, then the status icons (open quick settings).
+- **Right:** CPU and RAM usage (opens GNOME System Monitor), the system tray,
+  then the status icons (open quick settings).
 
 The bar is solid black.
 
@@ -51,16 +48,11 @@ toggles; volume and brightness sliders with an audio output picker; power mode
 power menu. Controls whose backing tool is missing are shown disabled, with a
 hint, instead of hidden.
 
-<img src="docs/screenshots/quick-settings.png" width="400" alt="Quick settings">
-
 ### Calendar, notifications and media
 
 Clicking the clock opens the calendar with the notification history and an
 MPRIS media card. The shell is its own notification server, with toasts at the
 top of the screen.
-
-<img src="docs/screenshots/calendar.png" width="380" alt="Calendar and notifications">
-<img src="docs/screenshots/notification.png" width="400" alt="Notification toast">
 
 ### Dock
 
@@ -113,8 +105,6 @@ Pick one in **Settings → Background** (large preview, a scrollable grid from
 the wallpaper folder, and shuffle), or jump there with
 `qs ipc call wallpaper toggle`.
 
-<img src="docs/screenshots/wallpaper.png" width="400" alt="Wallpaper picker">
-
 ### Screenshot panel
 
 GNOME‑style capture panel: selection, screen or window mode, delay and whether
@@ -122,12 +112,11 @@ to show the pointer. Captures are saved to
 `$XDG_PICTURES_DIR/Screenshots/Screenshot From <date>.png`, copied to the
 clipboard and announced with a notification.
 
-<img src="docs/screenshots/screenshot-panel.png" width="540" alt="Screenshot panel">
-
 ### Also included
 
 - **Volume and brightness OSD** above the dock.
-- **Alt+Tab** window switcher (most recently used first).
+- **Alt+Tab** window switcher (most recently used first), driven by the
+  `winswitch` IPC commands below; bind them in umbriel to use it.
 
 ## Requirements
 
