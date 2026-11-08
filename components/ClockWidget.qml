@@ -6,12 +6,8 @@ BarButton {
     id: clock
     active: PopupManager.current === "calendar"
 
-    readonly property var o: Settings.options
-    readonly property string fmt: (o.clockWeekday ? "ddd " : "") + "MMM d  "
-        + (o.clock24h ? "HH:mm" : "h:mm") + (o.clockSeconds ? ":ss" : "") + (o.clock24h ? "" : " AP")
-
     Text {
-        text: Qt.formatDateTime(Clock.now, clock.fmt)
+        text: Qt.formatDateTime(Clock.now, Settings.barFormat)
         font.family: Theme.fontFamily
         font.pixelSize: 15
         font.weight: Font.Bold

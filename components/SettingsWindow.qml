@@ -166,6 +166,39 @@ FloatingWindow {
                         ToggleSwitch { checked: win.o.clockSeconds; onToggled: v => win.o.clockSeconds = v }
                     }
 
+                    SectionLabel { text: "Format"; topPadding: 12 }
+                    Text {
+                        width: parent.width
+                        leftPadding: 4
+                        wrapMode: Text.WordWrap
+                        text: "Leave empty for the automatic format (from the toggles above). Codes: "
+                            + "ddd/dddd weekday, d day, MMM/MMMM month, yyyy year, HH/h hour, mm minutes, ss seconds, AP am/pm. "
+                            + "Press Enter to apply."
+                        color: Theme.fgDim
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 11
+                    }
+                    Repeater {
+                        model: [
+                            { key: "barFormat", title: "Top bar" },
+                            { key: "lockTimeFormat", title: "Lock screen time" },
+                            { key: "lockDateFormat", title: "Lock screen date" }
+                        ]
+                        delegate: SettingsRow {
+                            required property var modelData
+                            width: parent.width
+                            title: modelData.title
+                            // Preview of what the format shows right now.
+                            subtitle: Qt.formatDateTime(Clock.now, Settings[modelData.key])
+                            TextField {
+                                width: 220
+                                text: win.o[modelData.key]
+                                placeholder: Settings["default" + modelData.key[0].toUpperCase() + modelData.key.slice(1)]
+                                onCommitted: t => win.o[modelData.key] = t.trim()
+                            }
+                        }
+                    }
+
                     SectionLabel { text: "Timezone"; topPadding: 12 }
                     Text {
                         width: parent.width

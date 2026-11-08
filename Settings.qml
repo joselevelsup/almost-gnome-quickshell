@@ -18,6 +18,10 @@ QtObject {
         property bool clock24h: true
         property bool clockWeekday: false
         property bool clockSeconds: false
+        // Qt date/time formats; "" = the automatic format from the toggles above.
+        property string barFormat: ""
+        property string lockTimeFormat: ""
+        property string lockDateFormat: ""
         property bool batteryPercent: false
         // Monitor name (e.g. "DP-1") for the top bar; "" = every monitor.
         property string barScreen: ""
@@ -49,6 +53,16 @@ QtObject {
             }
         }
     }
+
+    // ---- Clock formats (top bar, lock screen) ----
+    readonly property string defaultBarFormat: (options.clockWeekday ? "ddd " : "") + "MMM d  "
+        + (options.clock24h ? "HH:mm" : "h:mm") + (options.clockSeconds ? ":ss" : "") + (options.clock24h ? "" : " AP")
+    // Qt only uses a 12-hour "h" when the format has AP.
+    readonly property string defaultLockTimeFormat: options.clock24h ? "HH:mm" : "h:mm AP"
+    readonly property string defaultLockDateFormat: "dddd, MMMM d"
+    readonly property string barFormat: options.barFormat || defaultBarFormat
+    readonly property string lockTimeFormat: options.lockTimeFormat || defaultLockTimeFormat
+    readonly property string lockDateFormat: options.lockDateFormat || defaultLockDateFormat
 
     // ---- Settings window ----
     property bool windowOpen: false

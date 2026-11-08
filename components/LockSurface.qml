@@ -91,7 +91,7 @@ WlSessionLockSurface {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatDateTime(Clock.now, Settings.options.clock24h ? "HH:mm" : "h:mm")
+            text: Qt.formatDateTime(Clock.now, Settings.lockTimeFormat)
             color: "#ffffff"
             font.family: Theme.fontFamily
             font.pixelSize: 96
@@ -100,7 +100,7 @@ WlSessionLockSurface {
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatDateTime(Clock.now, "dddd, MMMM d")
+            text: Qt.formatDateTime(Clock.now, Settings.lockDateFormat)
             color: "#ffffff"
             font.family: Theme.fontFamily
             font.pixelSize: 22
@@ -124,7 +124,7 @@ WlSessionLockSurface {
         y: surface.height * 0.3 + (surface.ctx.prompting ? 0 : 40)
         opacity: surface.ctx.prompting ? 1 : 0
         visible: opacity > 0
-        spacing: 16
+        spacing: 20
         Behavior on y { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         Behavior on opacity { NumberAnimation { duration: 200 } }
 
@@ -132,9 +132,9 @@ WlSessionLockSurface {
         Rectangle {
             id: avatar
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 128
-            height: 128
-            radius: 64
+            width: 160
+            height: 160
+            radius: 80
             color: Theme.cardBg
             clip: true
 
@@ -149,8 +149,8 @@ WlSessionLockSurface {
                 anchors.fill: parent
                 source: avatar.attempt < avatar.sources.length ? avatar.sources[avatar.attempt] : ""
                 fillMode: Image.PreserveAspectCrop
-                sourceSize.width: 256
-                sourceSize.height: 256
+                sourceSize.width: 320
+                sourceSize.height: 320
                 visible: false
                 onStatusChanged: if (status === Image.Error) avatar.attempt++
             }
@@ -172,7 +172,7 @@ WlSessionLockSurface {
                 anchors.centerIn: parent
                 visible: face.status !== Image.Ready
                 name: "avatar-default-symbolic"
-                size: 64
+                size: 80
             }
         }
 
@@ -181,7 +181,7 @@ WlSessionLockSurface {
             text: surface.ctx.realName || surface.ctx.user
             color: "#ffffff"
             font.family: Theme.fontFamily
-            font.pixelSize: 20
+            font.pixelSize: 26
             font.weight: Font.Bold
         }
 
@@ -189,8 +189,8 @@ WlSessionLockSurface {
         Rectangle {
             id: field
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 300
-            height: 40
+            width: 380
+            height: 52
             radius: height / 2
             color: Theme.withAlpha("#ffffff", 0.14)
             border.width: 2
@@ -198,12 +198,12 @@ WlSessionLockSurface {
             opacity: surface.ctx.busy ? 0.6 : 1
 
             Text {
-                anchors { left: parent.left; right: parent.right; leftMargin: 18; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; right: parent.right; leftMargin: 22; rightMargin: 22; verticalCenter: parent.verticalCenter }
                 text: surface.ctx.buffer.length > 0 ? "●".repeat(surface.ctx.buffer.length)
                     : surface.ctx.busy ? "Checking…" : "Password"
                 color: surface.ctx.buffer.length > 0 ? "#ffffff" : Theme.withAlpha("#ffffff", 0.6)
                 font.family: Theme.fontFamily
-                font.pixelSize: surface.ctx.buffer.length > 0 ? 12 : 14
+                font.pixelSize: surface.ctx.buffer.length > 0 ? 16 : 17
                 font.letterSpacing: surface.ctx.buffer.length > 0 ? 2 : 0
                 elide: Text.ElideLeft
             }
@@ -224,14 +224,14 @@ WlSessionLockSurface {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 300
+            width: 380
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             visible: text.length > 0
             text: surface.ctx.errorText
             color: "#ffffff"
             font.family: Theme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: 15
         }
     }
 }
