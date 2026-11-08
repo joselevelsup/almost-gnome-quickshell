@@ -15,7 +15,7 @@ shell reads windows and workspaces from `umbriel subscribe` and sends
 commands with `umbriel msg`.
 
 ### Screenshot
-[docs/screenshots/desktop.png](desktop-screenshot)
+![desktop-screenshot](docs/screenshots/desktop.png)
 
 ## Features
 
