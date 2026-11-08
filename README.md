@@ -14,6 +14,9 @@ panel. Window management and the workspace overview are left to umbriel: the
 shell reads windows and workspaces from `umbriel subscribe` and sends
 commands with `umbriel msg`.
 
+### Screenshot
+[docs/screenshots/desktop.png](desktop-screenshot)
+
 ## Features
 
 ### Top bar
