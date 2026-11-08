@@ -3,7 +3,7 @@
 > The Credit goes to [lfreyes97/quickshell](https://github.com/lfreyes97/quickshell)
 > They were the one that built the original version of this. Please check them out.
 
-# QuickShell Config
+# Almost Gnome Quickshell
 
 A GNOME 50–style desktop shell for the [umbriel](https://docs.noctalia.dev/umbriel/)
 Wayland compositor, built with [Quickshell](https://quickshell.outfoxxed.me).
