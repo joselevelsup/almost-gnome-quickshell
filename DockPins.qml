@@ -27,6 +27,16 @@ QtObject {
         root.pinned = root.pinned.filter(p => p !== id)
         save()
     }
+    // Moves `id` to where `targetId` is now (before it when moving left,
+    // after it when moving right).
+    function move(id, targetId) {
+        var from = root.pinned.indexOf(id), to = root.pinned.indexOf(targetId)
+        if (from === -1 || to === -1 || from === to) return
+        var list = root.pinned.slice()
+        list.splice(to, 0, list.splice(from, 1)[0])
+        root.pinned = list
+        save()
+    }
     function save() {
         Quickshell.execDetached(["mkdir", "-p", root.stateDir])
         file.setText(JSON.stringify(root.pinned))

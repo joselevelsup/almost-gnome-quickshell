@@ -21,10 +21,24 @@ PopupCard {
     property bool outputsOpen: false
     onVisibleChanged: {
         if (popup.visible) probe.running = true
-        else { popup.powerMenuOpen = false; popup.outputsOpen = false }
+        else { popup.powerMenuOpen = false; popup.outputsOpen = false; popup.netOpen = "" }
     }
 
     function run(cmd) { PopupManager.close(); Quickshell.execDetached(cmd) }
+
+    // Expanded settings row under the Wi-Fi/Bluetooth toggles: "wifi", "bt" or "".
+    property string netOpen: ""
+    // What the card shows; kept while it collapses so the text doesn't vanish.
+    property string netShown: "wifi"
+    onNetOpenChanged: if (popup.netOpen) popup.netShown = popup.netOpen
+    // Opens a TUI in a floating alacritty (umbriel rule on ^qs-tui-), or
+    // closes it if already open. cls/prog go in as $1/$2 so this sh's own
+    // command line never matches the pkill pattern. ~/.local/bin isn't on
+    // umbriel's PATH (bluetui lives there).
+    function toggleTui(cls, prog) {
+        popup.run(["sh", "-c", "pkill -f \"class $1\" || umbriel msg spawn "
+            + "\"PATH=\\$HOME/.local/bin:\\$PATH alacritty --class $1 -e $2\"", "sh", cls, prog])
+    }
 
     // ---- Wi-Fi ----
     property var wifiDevice: null
@@ -117,6 +131,7 @@ PopupCard {
         }
     }
     Component.onCompleted: {
+        probe.running = true
         popup.findWifiDevice()
         popup.refreshBrightness()
     }
@@ -185,7 +200,7 @@ PopupCard {
         height: popup.powerMenuOpen ? powerCol.implicitHeight : 0
         visible: height > 0
         clip: true
-        Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
         Rectangle {
             id: powerCard
@@ -232,7 +247,7 @@ PopupCard {
         height: popup.outputsOpen ? outputsCol.implicitHeight : 0
         visible: height > 0
         clip: true
-        Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
         Rectangle {
             width: parent.width
@@ -290,6 +305,9 @@ PopupCard {
                 : "Disconnected"
             checked: Networking.wifiEnabled
             onToggled: value => Networking.wifiEnabled = value
+            expandable: true
+            expanded: popup.netOpen === "wifi"
+            onExpandClicked: popup.netOpen = expanded ? "" : "wifi"
         }
         QuickToggle {
             Layout.fillWidth: true
@@ -300,6 +318,40 @@ PopupCard {
             sublabel: !popup.btOn ? "Off" : (popup.btConnectedName || "On")
             checked: popup.btOn
             onToggled: value => { if (popup.btAdapter) popup.btAdapter.enabled = value }
+            expandable: true
+            expanded: popup.netOpen === "bt"
+            onExpandClicked: popup.netOpen = expanded ? "" : "bt"
+        }
+
+        // ---- Wi-Fi / Bluetooth settings (expands below their toggles) ----
+        Item {
+            Layout.columnSpan: 2
+            Layout.fillWidth: true
+            Layout.preferredHeight: popup.netOpen ? netCol.implicitHeight : 0
+            visible: Layout.preferredHeight > 0
+            clip: true
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+            Rectangle {
+                width: parent.width
+                height: netCol.implicitHeight
+                radius: Theme.radius - 2
+                color: Theme.cardBg
+
+                Column {
+                    id: netCol
+                    width: parent.width
+                    topPadding: 4
+                    bottomPadding: 4
+                    ActionRow {
+                        width: parent.width
+                        icon: popup.netShown === "bt" ? "bluetooth-active-symbolic" : "network-wireless-symbolic"
+                        label: popup.netShown === "bt" ? "Bluetooth Settings…" : "Wi-Fi Settings…"
+                        onClicked: popup.netShown === "bt" ? popup.toggleTui("qs-tui-bt", "bluetui")
+                                                          : popup.toggleTui("qs-tui-wifi", "nmtui")
+                    }
+                }
+            }
         }
         QuickToggle {
             Layout.fillWidth: true

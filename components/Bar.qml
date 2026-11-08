@@ -60,10 +60,21 @@ PanelWindow {
     DismissLayer { screen: bar.screen }
     // Bottom-left hot corner opens the app grid (see HotCorner.qml).
     HotCorner { screen: bar.screen; edge: "bottom" }
-    CalendarPopup { screen: bar.screen }
-    QuickSettingsPanel { screen: bar.screen }
+    // Built only while open to save memory. The app grid and screenshot
+    // panel stay resident: the grid is slow to build, the panel keeps prefs.
+    LazyLoader {
+        active: PopupManager.current === "calendar"
+        CalendarPopup { screen: bar.screen }
+    }
+    LazyLoader {
+        active: PopupManager.current === "quicksettings"
+        QuickSettingsPanel { screen: bar.screen }
+    }
     AppGridPopup { screen: bar.screen }
-    AltTabPopup { screen: bar.screen }
+    LazyLoader {
+        active: Switcher.winActive
+        AltTabPopup { screen: bar.screen }
+    }
     NotificationToasts { screen: bar.screen }
     OsdPopup { screen: bar.screen }
     Dock { screen: bar.screen }

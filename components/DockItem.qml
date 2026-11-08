@@ -19,10 +19,20 @@ Item {
     signal activated
     signal newWindow
     signal menuRequested
+    // Pinned items can be dragged sideways to reorder them.
+    signal dragMoved
+    signal dropped
 
     property int size: 52
     width: size
     height: size
+
+    property bool dragging: false
+    property real dragOffset: 0
+    property real pressX: 0
+    // Set on a drag's release so the click that follows doesn't launch the app.
+    property bool wasDrag: false
+    transform: Translate { x: item.dragOffset }
 
     Rectangle {
         anchors.fill: parent
@@ -62,7 +72,28 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+        preventStealing: true
+        onPressed: event => { item.pressX = event.x; item.wasDrag = false }
+        onPositionChanged: event => {
+            if (!item.app.pinned || !(mouse.pressedButtons & Qt.LeftButton)) return
+            // Mouse coords include the drag translation; undo it.
+            var dx = event.x + item.dragOffset - item.pressX
+            if (!item.dragging && Math.abs(dx) < 8) return
+            item.dragging = true
+            item.dragOffset = dx
+            item.dragMoved()
+        }
+        onReleased: () => {
+            if (!item.dragging) return
+            item.dropped()
+            item.dragOffset = 0
+            item.dragging = false
+            item.wasDrag = true
+        }
+        onCanceled: { item.dragOffset = 0; item.dragging = false }
         onClicked: event => {
+            // Release of a drag also emits clicked; swallow it.
+            if (item.wasDrag) return
             if (event.button === Qt.RightButton) item.menuRequested()
             else if (event.button === Qt.MiddleButton) item.newWindow()
             else item.activated()

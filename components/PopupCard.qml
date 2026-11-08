@@ -35,10 +35,16 @@ PanelWindow {
     focusable: false
 
     implicitWidth: popup.cardWidth
-    implicitHeight: column.implicitHeight + 24
+    // Fixed surface height: resizing the layer surface on every frame of an
+    // expand animation made it stutter. Only the card resizes; the mask lets
+    // clicks below it through.
+    implicitHeight: popup.screen ? popup.screen.height - Theme.barHeight - 12 : 800
+    mask: Region { item: card }
 
-    // Smooth entrance (fade + slight slide) every time it opens.
+    // Smooth entrance (fade + slight slide) every time it opens. Popups are
+    // created already visible (LazyLoader in Bar.qml), hence onCompleted.
     onVisibleChanged: if (popup.visible) openAnim.restart()
+    Component.onCompleted: if (popup.visible) openAnim.restart()
     ParallelAnimation {
         id: openAnim
         NumberAnimation { target: card; property: "opacity"; from: 0; to: 1; duration: 140; easing.type: Easing.OutCubic }
@@ -48,7 +54,7 @@ PanelWindow {
     Rectangle {
         id: card
         width: parent.width
-        height: parent.height
+        height: column.implicitHeight + 24
         radius: Theme.radius
         color: Theme.popupBg
         border.width: 1
@@ -56,8 +62,7 @@ PanelWindow {
 
         Column {
             id: column
-            anchors.fill: parent
-            anchors.margins: 12
+            anchors { top: parent.top; left: parent.left; right: parent.right; margins: 12 }
             spacing: 10
         }
     }

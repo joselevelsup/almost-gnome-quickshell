@@ -11,7 +11,11 @@ Rectangle {
     property string label: ""
     property string sublabel: ""
     property bool checked: false
+    // Trailing arrow to expand something below (e.g. a settings row).
+    property bool expandable: false
+    property bool expanded: false
     signal toggled(bool value)
+    signal expandClicked
 
     implicitHeight: 56
     implicitWidth: 160
@@ -27,10 +31,19 @@ Rectangle {
 
     readonly property color contentColor: root.checked ? Theme.accentFg : Theme.fg
 
+    // Below the content so the expand arrow gets its own clicks.
+    MouseArea {
+        id: mouse
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.toggled(!root.checked)
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 16
-        anchors.rightMargin: 14
+        anchors.rightMargin: root.expandable ? 8 : 14
         spacing: 10
 
         SymbolicIcon {
@@ -65,13 +78,19 @@ Rectangle {
                 elide: Text.ElideRight
             }
         }
-    }
 
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.toggled(!root.checked)
+        IconButton {
+            visible: root.expandable
+            Layout.alignment: Qt.AlignVCenter
+            implicitWidth: 30
+            implicitHeight: 30
+            iconSize: 12
+            flat: true
+            icon: "pan-end-symbolic"
+            tint: root.contentColor
+            rotation: root.expanded ? 90 : 0
+            Behavior on rotation { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            onClicked: root.expandClicked()
+        }
     }
 }

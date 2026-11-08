@@ -67,10 +67,27 @@ PanelWindow {
         app.windows[(i + 1) % app.windows.length].activate()
     }
 
+    // ---- Drag to reorder pinned apps ----
+    // Pinned apps come first in `apps`, so their slot index is their order.
+    readonly property int pinnedCount: apps.filter(a => a.pinned).length
+    property int dragFrom: -1
+    property int dropIndex: -1
+    function dragTo(index, item) {
+        var cx = item.mapToItem(row, item.width / 2, 0).x
+        dock.dragFrom = index
+        dock.dropIndex = Math.max(0, Math.min(dock.pinnedCount - 1, Math.round((cx - dock.tile / 2) / (dock.tile + 4))))
+    }
+    function drop() {
+        if (dock.dropIndex < 0 || dock.dropIndex === dock.dragFrom) return
+        var id = dock.apps[dock.dragFrom].key, target = dock.apps[dock.dropIndex].key
+        // Deferred: the move rebuilds the delegate that is emitting this.
+        Qt.callLater(() => DockPins.move(id, target))
+    }
+
     // ---- Visibility ----
     readonly property bool workspaceEmpty: Umbriel.focusedWorkspace !== null && !Umbriel.focusedWorkspace.occupied
     property bool hot: false
-    readonly property bool revealed: !Settings.options.dockAutohide || hot || workspaceEmpty || menu.visible
+    readonly property bool revealed: !Settings.options.dockAutohide || hot || workspaceEmpty || menu.visible || dragFrom !== -1
     // Icon tile size from Settings.
     readonly property int tile: ({ small: 44, large: 64 })[Settings.options.dockIconSize] || 52
 
@@ -118,6 +135,18 @@ PanelWindow {
             }
         }
 
+        // Drop position while dragging a pinned app: in the gap before the
+        // target slot (moving left) or after it (moving right).
+        Rectangle {
+            visible: dock.dropIndex !== -1 && dock.dropIndex !== dock.dragFrom
+            x: row.x + (dock.dropIndex > dock.dragFrom ? dock.dropIndex + 1 : dock.dropIndex) * (dock.tile + 4) - 3
+            anchors.verticalCenter: parent.verticalCenter
+            width: 2
+            height: dock.tile - 8
+            radius: 1
+            color: Theme.accent
+        }
+
         Row {
             id: row
             anchors.centerIn: parent
@@ -130,6 +159,8 @@ PanelWindow {
                     required property var modelData
                     required property int index
                     spacing: 4
+                    z: dockItem.dragging ? 1 : 0
+                    Component.onDestruction: if (dockItem.dragging) dock.dragFrom = dock.dropIndex = -1
 
                     // Separator between pinned and unpinned running apps.
                     Rectangle {
@@ -149,6 +180,9 @@ PanelWindow {
                         onActivated: dock.activateApp(slot.modelData)
                         onNewWindow: if (slot.modelData.entry) AppLauncher.launch(slot.modelData.entry)
                         onMenuRequested: menu.openFor(slot.modelData, dockItem)
+                        onDragMoved: dock.dragTo(slot.index, dockItem)
+                        onDropped: dock.drop()
+                        onDraggingChanged: if (!dragging) dock.dragFrom = dock.dropIndex = -1
                     }
                 }
             }
@@ -193,7 +227,7 @@ PanelWindow {
     Rectangle {
         id: tooltip
         property Item target: null
-        readonly property bool active: target !== null && dock.revealed && !menu.visible
+        readonly property bool active: target !== null && dock.revealed && !menu.visible && dock.dragFrom === -1
         visible: opacity > 0
         opacity: active ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 100 } }

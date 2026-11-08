@@ -21,7 +21,9 @@ PanelWindow {
     readonly property int toastTopMargin: 40
 
     implicitWidth: 330
-    implicitHeight: column.implicitHeight + toastTopMargin
+    // Fixed height (see PopupCard): no surface resize while banners come and go.
+    implicitHeight: toasts.screen ? toasts.screen.height - Theme.barHeight : 700
+    mask: Region { item: column }
 
     Column {
         id: column
