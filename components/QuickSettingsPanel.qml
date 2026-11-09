@@ -60,6 +60,12 @@ PopupCard {
     }
     Timer { interval: 5000; running: true; repeat: true; onTriggered: popup.findWifiDevice() }
 
+    // ---- Ethernet (the connected adapter if any, else the first one) ----
+    readonly property var wiredDevice: {
+        var w = Networking.devices.values.filter(d => d.type === DeviceType.Wired)
+        return w.find(d => d.connected) || w[0] || null
+    }
+
     // ---- Bluetooth ----
     readonly property var btAdapter: Bluetooth.defaultAdapter
     readonly property bool btOn: popup.btAdapter ? popup.btAdapter.enabled : false
@@ -348,6 +354,16 @@ PopupCard {
                     }
                 }
             }
+        }
+        QuickToggle {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            visible: popup.wiredDevice !== null
+            icon: popup.wiredDevice && popup.wiredDevice.connected ? "network-wired-symbolic" : "network-wired-disconnected-symbolic"
+            label: "Wired"
+            sublabel: popup.wiredDevice && popup.wiredDevice.connected ? "Connected" : "Disconnected"
+            checked: popup.wiredDevice !== null && popup.wiredDevice.connected
+            onToggled: value => Quickshell.execDetached(["nmcli", "device", value ? "connect" : "disconnect", popup.wiredDevice.name])
         }
         QuickToggle {
             Layout.fillWidth: true

@@ -28,8 +28,12 @@ BarButton {
     Component.onCompleted: pill.findWifiDevice()
     Timer { interval: 5000; running: true; repeat: true; onTriggered: pill.findWifiDevice() }
 
+    // Like GNOME, ethernet takes the network icon's place while connected.
+    readonly property bool wired: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
+
     SymbolicIcon {
-        name: !Networking.wifiEnabled ? "network-wireless-disabled-symbolic"
+        name: pill.wired ? "network-wired-symbolic"
+            : !Networking.wifiEnabled ? "network-wireless-disabled-symbolic"
             : (pill.wifiDevice && pill.wifiDevice.connected) ? "network-wireless-symbolic" : "network-wireless-signal-none-symbolic"
     }
     SymbolicIcon {
