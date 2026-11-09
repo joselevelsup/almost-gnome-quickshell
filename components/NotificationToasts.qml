@@ -18,9 +18,9 @@ PanelWindow {
     // Gap below the bar. Note: it is part of the surface's total height, so
     // it must be added to implicitHeight or the card (placed with this
     // margin) gets clipped at the bottom edge.
-    readonly property int toastTopMargin: 40
+    readonly property int toastTopMargin: 12
 
-    implicitWidth: 330
+    implicitWidth: 500
     // Fixed height (see PopupCard): no surface resize while banners come and go.
     implicitHeight: toasts.screen ? toasts.screen.height - Theme.barHeight : 700
     mask: Region { item: column }
@@ -31,7 +31,7 @@ PanelWindow {
         anchors.top: parent.top
         anchors.topMargin: toasts.toastTopMargin
         spacing: 8
-        width: 330
+        width: 500
 
         // The others glide into place when a banner arrives or leaves.
         move: Transition {
@@ -50,6 +50,7 @@ PanelWindow {
                 summary: modelData.summary
                 body: modelData.body || ""
                 appIcon: modelData.appIcon || ""
+                image: modelData.image || ""
                 time: null
                 elevated: true
 

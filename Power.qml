@@ -187,6 +187,20 @@ Singleton {
         }
     }
 
+    // ---- Low battery ping (COSMIC style) ----
+    // 1 = low (≤15%, one ping), 2 = critical (≤5%, ping every 2 min until plugged in).
+    readonly property int batteryAlert: !power.onBattery || !UPower.displayDevice.isPresent ? 0
+        : UPower.displayDevice.percentage <= 0.05 ? 2
+        : UPower.displayDevice.percentage <= 0.15 ? 1 : 0
+    function ping() { Quickshell.execDetached(["paplay", "/usr/share/sounds/freedesktop/stereo/bell.oga"]) }
+    onBatteryAlertChanged: if (power.batteryAlert > 0) power.ping()
+    property Timer criticalPing: Timer {
+        interval: 120000
+        repeat: true
+        running: power.batteryAlert === 2
+        onTriggered: power.ping()
+    }
+
     Component.onCompleted: {
         console.assert(power.clean("uint32 300") === "300" && power.clean("'suspend'") === "suspend"
             && power.clean("true") === "true", "Power.clean self-check failed")

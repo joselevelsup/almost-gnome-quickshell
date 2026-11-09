@@ -153,14 +153,10 @@ PopupCard {
                 id: batRow
                 anchors.centerIn: parent
                 spacing: 6
-                SymbolicIcon {
+                BatteryIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    name: {
-                        if (!popup.hasBattery) return ""
-                        var step = Math.min(100, Math.max(0, Math.round(popup.battery.percentage * 10) * 10))
-                        if (step === 100 && popup.charging) return "battery-level-100-charged-symbolic"
-                        return "battery-level-" + step + (popup.charging ? "-charging" : "") + "-symbolic"
-                    }
+                    percentage: popup.hasBattery ? popup.battery.percentage : 1
+                    charging: popup.charging
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter

@@ -43,6 +43,7 @@ PopupCard {
                         summary: modelData.summary
                         body: modelData.body || ""
                         appIcon: modelData.appIcon || ""
+                        image: modelData.image || ""
                         time: modelData.time
                         onDismissRequested: {
                             var arr = Notifications.history.slice()

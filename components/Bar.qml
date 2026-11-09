@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Services.Mpris
 import ".."
 import QtQuick
 import QtQuick.Layouts
@@ -50,10 +51,12 @@ PanelWindow {
     }
 
     // Caffeine's idle inhibitor is tied to the bar (always visible) because
-    // Wayland needs a surface to create it.
+    // Wayland needs a surface to create it. It also covers playing media and
+    // open mpv windows: umbriel ignores inhibitors from app windows.
     IdleInhibitor {
         window: bar
-        enabled: Caffeine.enabled
+        enabled: Caffeine.enabled || Mpris.players.values.some(p => p.isPlaying)
+            || Umbriel.windows.some(w => w.appId === "mpv")
     }
 
     // Pinned to the bar's screen; otherwise the compositor picks one.

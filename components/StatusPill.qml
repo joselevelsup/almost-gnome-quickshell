@@ -28,14 +28,6 @@ BarButton {
     Component.onCompleted: pill.findWifiDevice()
     Timer { interval: 5000; running: true; repeat: true; onTriggered: pill.findWifiDevice() }
 
-    function batteryIcon() {
-        if (!pill.hasBattery) return ""
-        var pct = pill.battery.percentage * 100
-        var step = Math.min(100, Math.max(0, Math.round(pct / 10) * 10))
-        if (step === 100 && pill.charging) return "battery-level-100-charged-symbolic"
-        return "battery-level-" + step + (pill.charging ? "-charging" : "") + "-symbolic"
-    }
-
     SymbolicIcon {
         name: !Networking.wifiEnabled ? "network-wireless-disabled-symbolic"
             : (pill.wifiDevice && pill.wifiDevice.connected) ? "network-wireless-symbolic" : "network-wireless-signal-none-symbolic"
@@ -46,9 +38,10 @@ BarButton {
             : pill.audio.volume > 0.5 ? "audio-volume-high-symbolic"
             : pill.audio.volume > 0 ? "audio-volume-medium-symbolic" : "audio-volume-low-symbolic"
     }
-    SymbolicIcon {
+    BatteryIcon {
         visible: pill.hasBattery
-        name: pill.batteryIcon()
+        percentage: pill.hasBattery ? pill.battery.percentage : 1
+        charging: pill.charging
     }
     Text {
         visible: pill.hasBattery && Settings.options.batteryPercent

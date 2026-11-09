@@ -47,6 +47,7 @@ QtObject {
     readonly property color fg:        "#ffffff"
     readonly property color fgDim:     "#9a9996"
     readonly property color danger:    "#e01b24"
+    readonly property color warning:   "#f5c211"
     readonly property color ok:        "#26a269"
 
     // The GNOME top bar is solid black.
