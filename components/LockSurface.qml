@@ -1,5 +1,8 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Networking
+import Quickshell.Services.Pipewire
+import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Effects
 import ".."
@@ -12,6 +15,27 @@ WlSessionLockSurface {
     id: surface
     required property var ctx
     color: "#000000"
+
+    // Clock, prompt and status icons only on the laptop screen; the others
+    // get just the blurred wallpaper. Falls back to the first screen when
+    // the laptop screen is off (lid closed), so the prompt never goes missing.
+    readonly property string mainOutput: "eDP-1"
+    readonly property bool isMain: Quickshell.screens.some(s => s.name === surface.mainOutput)
+        ? surface.screen !== null && surface.screen.name === surface.mainOutput
+        : surface.screen === Quickshell.screens[0]
+
+    // Password shown in plain text; back to dots whenever the prompt closes.
+    property bool reveal: false
+    Connections {
+        target: surface.ctx
+        function onPromptingChanged() { if (!surface.ctx.prompting) surface.reveal = false }
+    }
+
+    readonly property var battery: UPower.displayDevice
+    readonly property bool wired: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
+    readonly property bool wifi: Networking.devices.values.some(d => d.type === DeviceType.Wifi && d.connected)
+    readonly property var audio: Pipewire.defaultAudioSink ? Pipewire.defaultAudioSink.audio : null
+    PwObjectTracker { objects: Pipewire.defaultAudioSink ? [Pipewire.defaultAudioSink] : [] }
 
     // ---- Background ----
     Image {
@@ -33,8 +57,8 @@ WlSessionLockSurface {
     }
     Rectangle {
         anchors.fill: parent
-        color: Theme.withAlpha("#000000", surface.ctx.prompting ? 0.6 : 0.4)
-        Behavior on color { ColorAnimation { duration: 200 } }
+        // GNOME keeps the blurred wallpaper bright, dimmed only enough for white text.
+        color: Theme.withAlpha("#000000", 0.3)
     }
 
     // ---- Input: one handler for the whole surface, so typing works right away ----
@@ -82,6 +106,7 @@ WlSessionLockSurface {
     // ---- Clock ----
     Column {
         id: clockCol
+        visible: surface.isMain
         anchors.horizontalCenter: parent.horizontalCenter
         y: surface.ctx.prompting ? -height : surface.height * 0.22
         opacity: surface.ctx.prompting ? 0 : 1
@@ -108,6 +133,7 @@ WlSessionLockSurface {
         }
     }
     Text {
+        visible: surface.isMain
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 48 }
         opacity: surface.ctx.prompting ? 0 : 0.8
         Behavior on opacity { NumberAnimation { duration: 200 } }
@@ -117,14 +143,38 @@ WlSessionLockSurface {
         font.pixelSize: 14
     }
 
+    // ---- Status icons (top right, like GNOME's lock screen panel) ----
+    Row {
+        visible: surface.isMain
+        anchors { top: parent.top; right: parent.right; topMargin: 8; rightMargin: 14 }
+        spacing: 10
+        SymbolicIcon {
+            visible: surface.wired || surface.wifi || !Networking.wifiEnabled
+            name: surface.wired ? "network-wired-symbolic"
+                : surface.wifi ? "network-wireless-symbolic" : "network-wireless-disabled-symbolic"
+        }
+        SymbolicIcon {
+            visible: surface.audio !== null
+            name: !surface.audio || surface.audio.muted ? "audio-volume-muted-symbolic"
+                : surface.audio.volume > 0.5 ? "audio-volume-high-symbolic"
+                : surface.audio.volume > 0 ? "audio-volume-medium-symbolic" : "audio-volume-low-symbolic"
+        }
+        BatteryIcon {
+            visible: surface.battery && surface.battery.isPresent
+            percentage: visible ? surface.battery.percentage : 1
+            charging: visible && surface.battery.state === UPowerDeviceState.Charging
+        }
+    }
+
     // ---- Unlock prompt ----
     Column {
         id: prompt
         anchors.horizontalCenter: parent.horizontalCenter
-        y: surface.height * 0.3 + (surface.ctx.prompting ? 0 : 40)
+        // Centered, nudged a little above the middle like GNOME's unlock dialog.
+        y: (surface.height - height) / 2 - surface.height * 0.04 + (surface.ctx.prompting ? 0 : 40)
         opacity: surface.ctx.prompting ? 1 : 0
-        visible: opacity > 0
-        spacing: 20
+        visible: surface.isMain && opacity > 0
+        spacing: 16
         Behavior on y { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         Behavior on opacity { NumberAnimation { duration: 200 } }
 
@@ -132,9 +182,9 @@ WlSessionLockSurface {
         Rectangle {
             id: avatar
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 160
-            height: 160
-            radius: 80
+            width: 144
+            height: 144
+            radius: 72
             color: Theme.cardBg
             clip: true
 
@@ -149,8 +199,8 @@ WlSessionLockSurface {
                 anchors.fill: parent
                 source: avatar.attempt < avatar.sources.length ? avatar.sources[avatar.attempt] : ""
                 fillMode: Image.PreserveAspectCrop
-                sourceSize.width: 320
-                sourceSize.height: 320
+                sourceSize.width: 288
+                sourceSize.height: 288
                 visible: false
                 onStatusChanged: if (status === Image.Error) avatar.attempt++
             }
@@ -172,7 +222,7 @@ WlSessionLockSurface {
                 anchors.centerIn: parent
                 visible: face.status !== Image.Ready
                 name: "avatar-default-symbolic"
-                size: 80
+                size: 72
             }
         }
 
@@ -181,7 +231,7 @@ WlSessionLockSurface {
             text: surface.ctx.realName || surface.ctx.user
             color: "#ffffff"
             font.family: Theme.fontFamily
-            font.pixelSize: 26
+            font.pixelSize: 22
             font.weight: Font.Bold
         }
 
@@ -189,23 +239,44 @@ WlSessionLockSurface {
         Rectangle {
             id: field
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 380
-            height: 52
-            radius: height / 2
-            color: Theme.withAlpha("#ffffff", 0.14)
+            width: 280
+            height: 38
+            radius: 9
+            color: Theme.withAlpha("#ffffff", 0.18)
             border.width: 2
             border.color: surface.ctx.errorText ? Theme.danger : Theme.accent
             opacity: surface.ctx.busy ? 0.6 : 1
 
             Text {
-                anchors { left: parent.left; right: parent.right; leftMargin: 22; rightMargin: 22; verticalCenter: parent.verticalCenter }
-                text: surface.ctx.buffer.length > 0 ? "●".repeat(surface.ctx.buffer.length)
-                    : surface.ctx.busy ? "Checking…" : "Password"
+                anchors { left: parent.left; right: eye.left; leftMargin: 12; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                text: surface.ctx.buffer.length === 0 ? (surface.ctx.busy ? "Checking…" : "Password")
+                    : surface.reveal ? surface.ctx.buffer : "●".repeat(surface.ctx.buffer.length)
                 color: surface.ctx.buffer.length > 0 ? "#ffffff" : Theme.withAlpha("#ffffff", 0.6)
                 font.family: Theme.fontFamily
-                font.pixelSize: surface.ctx.buffer.length > 0 ? 16 : 17
-                font.letterSpacing: surface.ctx.buffer.length > 0 ? 2 : 0
+                font.pixelSize: 15
+                font.letterSpacing: surface.ctx.buffer.length > 0 && !surface.reveal ? 2 : 0
                 elide: Text.ElideLeft
+            }
+
+            // Show/hide the password, like GNOME's peek icon.
+            Item {
+                id: eye
+                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                width: 26
+                height: 26
+                SymbolicIcon {
+                    anchors.centerIn: parent
+                    name: surface.reveal ? "view-conceal-symbolic" : "view-reveal-symbolic"
+                    size: 16
+                    tint: Theme.withAlpha("#ffffff", eyeMouse.containsMouse ? 1 : 0.75)
+                }
+                MouseArea {
+                    id: eyeMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { surface.reveal = !surface.reveal; keys.forceActiveFocus() }
+                }
             }
 
             // Shake on a failed attempt.
@@ -224,7 +295,7 @@ WlSessionLockSurface {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 380
+            width: 320
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             visible: text.length > 0
