@@ -35,7 +35,7 @@ PanelWindow {
         id: pill
         anchors.fill: parent
         radius: height / 2
-        color: Theme.toastBg
+        color: Theme.glassBg
         border.width: 1
         border.color: Theme.border
         opacity: Osd.shown ? 1 : 0

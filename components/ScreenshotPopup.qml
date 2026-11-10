@@ -103,7 +103,7 @@ PanelWindow {
         implicitHeight: col.implicitHeight + 24
         height: implicitHeight
         radius: Theme.radius
-        color: Theme.popupBg
+        color: Theme.glassBg
         border.width: 1
         border.color: Theme.border
 

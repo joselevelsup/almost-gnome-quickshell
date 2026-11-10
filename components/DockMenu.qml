@@ -45,7 +45,7 @@ PopupWindow {
         id: card
         anchors.fill: parent
         radius: Theme.radius
-        color: Theme.toastBg
+        color: Theme.glassBg
         border.width: 1
         border.color: Theme.border
 

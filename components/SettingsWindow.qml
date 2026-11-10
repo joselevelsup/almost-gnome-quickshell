@@ -356,8 +356,43 @@ FloatingWindow {
                     SettingsRow {
                         width: parent.width
                         title: "Blur"
-                        subtitle: "Blurred wallpaper behind the top bar and dock"
+                        subtitle: "Blur behind the top bar, dock, popups and notifications"
                         ToggleSwitch { checked: win.o.blur; onToggled: v => win.o.blur = v }
+                    }
+                    SettingsRow {
+                        width: parent.width
+                        enabled: win.o.blur
+                        opacity: enabled ? 1 : 0.5
+                        title: "Opacity"
+                        subtitle: "How solid the blurred panels are"
+                        SliderRow {
+                            width: 240
+                            icon: "display-brightness-symbolic"
+                            readonly property real lo: 0.3
+                            value: (win.o.blurOpacity - lo) / (1 - lo)
+                            showValue: false
+                            onValueEdited: v => win.o.blurOpacity = Math.round((lo + v * (1 - lo)) * 100) / 100
+                        }
+                    }
+                    SettingsRow {
+                        width: parent.width
+                        enabled: win.o.blur && Settings.blurRadius >= 0
+                        opacity: enabled ? 1 : 0.5
+                        title: "Blur strength"
+                        subtitle: (Settings.blurRadius >= 0 ? "Radius " + Settings.blurRadius + " · " : "")
+                            + "Also applies to window blur"
+                        Component.onCompleted: Settings.readBlurRadius()
+                        SliderRow {
+                            width: 240
+                            icon: "insert-image-symbolic"
+                            showValue: false
+                            readonly property int hi: 20
+                            value: Math.max(0, Settings.blurRadius) / hi
+                            onValueEdited: v => {
+                                var r = Math.round(v * hi)
+                                if (r !== Settings.blurRadius) Settings.setBlurRadius(r)
+                            }
+                        }
                     }
                 }
 

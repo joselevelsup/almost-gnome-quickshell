@@ -39,7 +39,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius
-        color: root.elevated ? Theme.toastBg
+        color: root.elevated ? Theme.glassBg
                              : Theme.withAlpha("#ffffff", 0.06)
         border.width: root.elevated ? 1 : 0
         border.color: Theme.border

@@ -54,7 +54,9 @@ QtObject {
     readonly property color barBg:     "#000000"
     // Popups take the wallpaper's hue, kept dark so white text stays readable.
     readonly property color popupBg:   theme.wallpaperSurface
-    readonly property color toastBg:   theme.wallpaperSurface
+    // Surfaces umbriel blurs behind (layer rules in ~/.config/umbriel/config.toml):
+    // translucent while Blur is on, so the blur shows through.
+    readonly property color glassBg:   Settings.options.blur ? withAlpha(theme.wallpaperSurface, Settings.options.blurOpacity) : theme.wallpaperSurface
     readonly property color border:    withAlpha("#ffffff", 0.08)
     readonly property color hoverBg:   withAlpha("#ffffff", 0.12)
     readonly property color activeBg:  withAlpha(theme.accent, 0.30)

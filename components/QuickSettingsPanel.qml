@@ -16,6 +16,7 @@ PopupCard {
     popupName: "quicksettings"
     align: "right"
     cardWidth: 400
+    cardColor: Theme.glassBg
 
     property bool powerMenuOpen: false
     property bool outputsOpen: false

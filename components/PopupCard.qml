@@ -11,6 +11,8 @@ PanelWindow {
     // "left" (below the workspace indicator), "right" (below the status pill) or "center" (below the clock)
     property string align: "right"
     property int cardWidth: 300
+    // Theme.glassBg for popups umbriel blurs behind.
+    property color cardColor: Theme.popupBg
     default property alias content: column.data
 
     WlrLayershell.namespace: "quickshell:popup:" + popup.popupName
@@ -56,7 +58,7 @@ PanelWindow {
         width: parent.width
         height: column.implicitHeight + 24
         radius: Theme.radius
-        color: Theme.popupBg
+        color: popup.cardColor
         border.width: 1
         border.color: Theme.border
 

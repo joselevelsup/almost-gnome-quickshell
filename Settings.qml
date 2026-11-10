@@ -25,8 +25,10 @@ QtObject {
         property bool batteryPercent: false
         // Monitor name (e.g. "DP-1") for the top bar; "" = every monitor.
         property string barScreen: ""
-        // Blurred wallpaper behind the bar and dock.
+        // Umbriel blur behind the bar, dock, calendar, notifications and OSD.
         property bool blur: false
+        // Opacity of those surfaces while blur is on (0.3–1).
+        property real blurOpacity: 0.7
         property bool dockAutohide: true
         property string dockIconSize: "default" // small | default | large
         property string nightFrom: "20:00"
@@ -70,6 +72,37 @@ QtObject {
     function openWindow(page) {
         if (page) root.page = page
         root.windowOpen = true
+    }
+
+    // ---- Blur strength: `radius` under [appearance.blur] in umbriel's config ----
+    // Read from and written to umbriel's file (it reloads live), so it stays the
+    // one place the value lives. Global: also applies to window blur.
+    readonly property string umbrielConfig: (Quickshell.env("XDG_CONFIG_HOME")
+        || (Quickshell.env("HOME") + "/.config")) + "/umbriel/config.toml"
+    property int blurRadius: -1 // -1 until read
+    function readBlurRadius() { blurRead.running = true }
+    function setBlurRadius(r) { root.blurRadius = r; blurWrite.restart() }
+
+    readonly property string blurAwk: "/^\\[/ { if (sec && !done) { print \"radius = \" r; done = 1 }"
+        + " sec = ($0 ~ /^\\[appearance\\.blur\\][ \\t]*(#.*)?$/) }"
+        + " sec && /^[ \\t]*radius[ \\t]*=/ { if (!done) print \"radius = \" r; done = 1; next }"
+        + " { print }"
+        + " END { if (!done) { if (!sec) print \"\\n[appearance.blur]\"; print \"radius = \" r } }"
+
+    // No radius line means umbriel's default, 5.
+    property Process blurRead: Process {
+        command: ["awk", "/^\\[/ { sec = ($0 ~ /^\\[appearance\\.blur\\][ \\t]*(#.*)?$/) }"
+            + " sec && /^[ \\t]*radius[ \\t]*=/ { sub(/^[^=]*=[ \\t]*/, \"\"); print $1 + 0; found = 1 }"
+            + " END { if (!found) print 5 }", root.umbrielConfig]
+        stdout: StdioCollector { onStreamFinished: { var n = parseInt(text); if (!isNaN(n)) root.blurRadius = n } }
+    }
+    // Waits for the slider to settle: umbriel reloads on every write.
+    property Timer blurWrite: Timer {
+        interval: 400
+        onTriggered: Quickshell.execDetached(["sh", "-c",
+            // Rewrite in place (keeps the inode umbriel watches).
+            "awk -v r=\"$1\" \"$2\" \"$3\" > \"$3.tmp\" && cat \"$3.tmp\" > \"$3\"; rm -f \"$3.tmp\"",
+            "sh", String(root.blurRadius), root.blurAwk, root.umbrielConfig])
     }
 
     // ---- Night light (wlsunset) ----

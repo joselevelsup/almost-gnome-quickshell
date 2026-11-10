@@ -11,6 +11,7 @@ PopupCard {
     popupName: "calendar"
     align: "center"
     cardWidth: 620
+    cardColor: Theme.glassBg
 
     RowLayout {
         width: parent.width

@@ -22,9 +22,8 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Settings.options.blur ? "transparent" : Theme.barBg
-
-        BlurBackdrop { tint: Theme.withAlpha("#000000", 0.35) }
+        // The bar stays lighter than the panels (0.35 at the default 0.7).
+        color: Settings.options.blur ? Theme.withAlpha(Theme.barBg, Settings.options.blurOpacity / 2) : Theme.barBg
 
         Workspaces {
             anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
