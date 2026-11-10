@@ -229,6 +229,8 @@ WlSessionLockSurface {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: surface.ctx.realName || surface.ctx.user
+            // Extra room between the name and the password field.
+            height: implicitHeight + 10
             color: "#ffffff"
             font.family: Theme.fontFamily
             font.pixelSize: 22
