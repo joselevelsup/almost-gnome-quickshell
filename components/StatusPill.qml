@@ -1,11 +1,13 @@
 import Quickshell.Networking
+import Quickshell.Bluetooth
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import QtQuick
 import ".."
 
-// System status icons on the right of the bar (network, volume, battery)
-// that open Quick Settings, like GNOME Shell's top-right status area.
+// System status icons on the right of the bar (network, bluetooth,
+// volume, battery) that open Quick Settings, like GNOME Shell's
+// top-right status area.
 BarButton {
     id: pill
     active: PopupManager.current === "quicksettings"
@@ -31,10 +33,24 @@ BarButton {
     // Like GNOME, ethernet takes the network icon's place while connected.
     readonly property bool wired: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
 
+    // Bluetooth shows in the pill only while a device is connected.
+    readonly property var btAdapter: Bluetooth.defaultAdapter
+    readonly property bool btConnected: {
+        if (!pill.btAdapter || !pill.btAdapter.devices) return false
+        var devs = pill.btAdapter.devices.values
+        for (var i = 0; i < devs.length; i++)
+            if (devs[i].connected) return true
+        return false
+    }
+
     SymbolicIcon {
         name: pill.wired ? "network-wired-symbolic"
             : !Networking.wifiEnabled ? "network-wireless-disabled-symbolic"
             : (pill.wifiDevice && pill.wifiDevice.connected) ? "network-wireless-symbolic" : "network-wireless-signal-none-symbolic"
+    }
+    SymbolicIcon {
+        visible: pill.btConnected
+        name: "bluetooth-active-symbolic"
     }
     SymbolicIcon {
         name: !pill.audio ? "audio-volume-muted-symbolic"
