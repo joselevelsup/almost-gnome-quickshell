@@ -14,8 +14,14 @@ panel. Window management and the workspace overview are left to umbriel: the
 shell reads windows and workspaces from `umbriel subscribe` and sends
 commands with `umbriel msg`.
 
-### Screenshot
-![desktop-screenshot](docs/screenshots/desktop.png)
+### Screenshots
+
+| | |
+| --- | --- |
+| ![Desktop](docs/screenshots/desktop_clear.png)<br>**Desktop** | ![App grid and search](docs/screenshots/app_launcher.png)<br>**App grid and search** |
+| ![Quick settings](docs/screenshots/quick_settings.png)<br>**Quick settings** | ![Calendar and notifications](docs/screenshots/notification_and_calendar_center.png)<br>**Calendar and notifications** |
+| ![Notification toasts](docs/screenshots/desktop_notifications.png)<br>**Notification toasts** | ![Screenshot panel](docs/screenshots/screenshot_tool.png)<br>**Screenshot panel** |
+| ![Lock screen](docs/screenshots/lock_screen.png)<br>**Lock screen** | ![Settings](docs/screenshots/settings.png)<br>**Settings** |
 
 ## Features
 
