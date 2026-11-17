@@ -23,6 +23,9 @@ commands with `umbriel msg`.
 | ![Notification toasts](docs/screenshots/desktop_notifications.png)<br>**Notification toasts** | ![Screenshot panel](docs/screenshots/screenshot_tool.png)<br>**Screenshot panel** |
 | ![Lock screen](docs/screenshots/lock_screen.png)<br>**Lock screen** | ![Settings](docs/screenshots/settings.png)<br>**Settings** |
 
+> The RAM usage in the top bar comes from my other open apps (Waterfox, Chrome,
+> Slack) — not from the shell itself.
+
 ## Features
 
 ### Top bar
