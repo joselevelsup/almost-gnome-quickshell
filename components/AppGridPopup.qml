@@ -31,27 +31,7 @@ PanelWindow {
     // As many rows of 150px tiles as fit (available height: below the search
     // bar, above the page dots).
     readonly property int perPage: resultCols * Math.max(1, Math.floor((height - 96 - 16 - 56 + tileGap) / (150 + tileGap)))
-    readonly property var results: {
-        var q = query.trim().toLowerCase()
-        var apps = DesktopEntries.applications.values.filter(e => !e.noDisplay)
-        if (q.length === 0) return apps.slice().sort((a, b) => a.name.localeCompare(b.name))
-        function score(e) {
-            var n = (e.name || "").toLowerCase()
-            if (n.startsWith(q)) return 100
-            if (n.split(/[\s\-_.]+/).some(w => w.startsWith(q))) return 80
-            if (n.indexOf(q) !== -1) return 60
-            var extra = [e.genericName || "", (e.keywords || []).join(" "), e.id || ""].join(" ").toLowerCase()
-            if (extra.indexOf(q) !== -1) return 40
-            if ((e.comment || "").toLowerCase().indexOf(q) !== -1) return 20
-            return 0
-        }
-        return apps
-            .map(e => ({ entry: e, score: score(e) }))
-            .filter(r => r.score > 0)
-            .sort((a, b) => (b.score - a.score) || a.entry.name.localeCompare(b.entry.name))
-            .slice(0, 18)
-            .map(r => r.entry)
-    }
+    readonly property var results: AppLauncher.search(query, 18)
     onQueryChanged: { selIndex = 0; pages.currentIndex = 0 }
 
     function launch(entry) {

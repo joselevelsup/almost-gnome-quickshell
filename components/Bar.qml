@@ -72,7 +72,12 @@ PanelWindow {
         active: PopupManager.current === "quicksettings"
         QuickSettingsPanel { screen: bar.screen }
     }
+    LazyLoader {
+        active: PopupManager.current === "power"
+        PowerDialog { screen: bar.screen }
+    }
     AppGridPopup { screen: bar.screen }
+    SpotlightPopup { screen: bar.screen }
     LazyLoader {
         active: Switcher.winActive
         AltTabPopup { screen: bar.screen }

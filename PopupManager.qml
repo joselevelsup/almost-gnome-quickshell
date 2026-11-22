@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Tracks which bar popup is open ("calendar", "quicksettings", ... or "").
+// Tracks which bar popup is open ("calendar", "quicksettings", "spotlight", ... or "").
 // Only one can be open at a time, as in GNOME Shell.
 QtObject {
     id: mgr
@@ -15,6 +15,11 @@ QtObject {
     function open(name) { mgr.current = mgr.current === name ? "" : name }
     function close() { mgr.current = "" }
     onCurrentChanged: mgr.lastChange = Date.now()
+
+    // Pending power action ("reboot"/"poweroff") for the PowerDialog,
+    // set by openPower() from the quick settings' power menu.
+    property string powerAction: ""
+    function openPower(action) { mgr.powerAction = action; mgr.current = "power" }
 
     // Starts the lock screen (lock.qml) as its own instance, through umbriel so
     // it isn't a child of the shell.
@@ -56,5 +61,12 @@ QtObject {
         function toggle(): void { mgr.open("launcher") }
         function open(): void { mgr.current = "launcher" }
         function close(): void { if (mgr.current === "launcher") mgr.close() }
+    }
+
+    property IpcHandler spotlightIpc: IpcHandler {
+        target: "spotlight"
+        function toggle(): void { mgr.open("spotlight") }
+        function open(): void { mgr.current = "spotlight" }
+        function close(): void { if (mgr.current === "spotlight") mgr.close() }
     }
 }

@@ -46,6 +46,16 @@ dots or the arrow keys. Start typing to search; <kbd>Enter</kbd> launches the
 selected app. Apps are started through `umbriel msg spawn`, so they belong to
 the compositor and survive a shell restart.
 
+### Spotlight
+
+A second, lighter launcher inspired by
+[search-light](https://github.com/icedman/search-light): a floating search box
+over the blurred desktop, with matching apps listed under it as you type.
+<kbd>Up</kbd>/<kbd>Down</kbd> select, <kbd>Enter</kbd> launches, <kbd>Esc</kbd>
+clears or closes. It uses the same search as the app grid. Open it with
+`qs ipc call spotlight toggle`; for the blur, add `spotlight` to the
+`quickshell:popup:(…)` layer rules in umbriel's config.
+
 ### Hot corner
 
 GNOME style: keep the pointer in the bottom‑left corner for ~180 ms and the app
@@ -181,6 +191,9 @@ Every command the shell accepts (also listed live by `qs ipc show`):
 | `qs ipc call launcher toggle` | Open/close the app grid |
 | `qs ipc call launcher open` | Open the app grid |
 | `qs ipc call launcher close` | Close the app grid |
+| `qs ipc call spotlight toggle` | Open/close the spotlight search |
+| `qs ipc call spotlight open` | Open the spotlight search |
+| `qs ipc call spotlight close` | Close the spotlight search |
 | `qs ipc call screenshot toggle` | Open/close the screenshot panel |
 | `qs ipc call lock lock` | Lock the screen (starts `lock.qml`) |
 | `qs ipc call settings open` | Open Settings |
@@ -234,13 +247,14 @@ Wallpaper.qml         Current wallpaper, saved across restarts
 Osd.qml               Volume/brightness OSD state
 DockPins.qml          Pinned dock apps
 Caffeine.qml          Idle inhibitor state
-AppLauncher.qml       Launches apps through `umbriel msg spawn`
+AppLauncher.qml       App search + launching through `umbriel msg spawn`
 components/
   Bar.qml             Top bar; hosts the background, every popup, dock and OSD
   Background.qml      Desktop wallpaper with a GNOME-style crossfade
   Workspaces.qml      GNOME 50 workspace indicator pill
   HotCorner.qml       Hover‑with‑delay hot corner (app grid)
   AppGridPopup.qml    App grid in pages + app search
+  SpotlightPopup.qml  Spotlight-style search box launcher
   QuickSettingsPanel.qml
   CalendarPopup.qml   Calendar, notifications, MediaPlayer
   Dock.qml            Dock (DockItem, DockMenu)

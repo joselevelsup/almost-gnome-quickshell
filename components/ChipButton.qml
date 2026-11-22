@@ -11,10 +11,14 @@ Rectangle {
     property string icon: ""
     property bool selected: false
     property bool dot: false
+    // Scaled-up variant (e.g. PowerDialog buttons); defaults keep the
+    // small chip used everywhere else.
+    property int textSize: 14
+    property int buttonHeight: 36
     signal clicked
 
     implicitWidth: Math.max(36, content.implicitWidth + 16)
-    implicitHeight: 36
+    implicitHeight: chip.buttonHeight
     radius: Theme.radius - 6
     color: chip.selected ? Theme.accent : (mouse.containsMouse ? Theme.cardHoverBg : Theme.cardBg)
     opacity: chip.enabled || chip.selected ? 1 : 0.4
@@ -45,7 +49,7 @@ Rectangle {
             text: chip.text
             color: chip.contentColor
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: chip.textSize
             font.weight: chip.selected ? Font.Bold : Font.Normal
         }
     }

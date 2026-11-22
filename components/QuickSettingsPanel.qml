@@ -218,9 +218,9 @@ PopupCard {
                 topPadding: 4
                 bottomPadding: 4
                 ActionRow { width: parent.width; icon: "weather-clear-night-symbolic"; label: "Suspend"; onClicked: popup.run(["systemctl", "suspend"]) }
-                ActionRow { width: parent.width; icon: "system-reboot-symbolic"; label: "Restart"; onClicked: popup.run(["systemctl", "reboot"]) }
+                ActionRow { width: parent.width; icon: "system-reboot-symbolic"; label: "Restart"; onClicked: PopupManager.openPower("reboot") }
                 ActionRow { width: parent.width; icon: "system-log-out-symbolic"; label: "Log Out"; onClicked: popup.run(["umbriel", "msg", "session-quit", "skip-confirmation"]) }
-                ActionRow { width: parent.width; icon: "system-shutdown-symbolic"; label: "Power Off"; tint: Theme.danger; onClicked: popup.run(["systemctl", "poweroff"]) }
+                ActionRow { width: parent.width; icon: "system-shutdown-symbolic"; label: "Power Off"; tint: Theme.danger; onClicked: PopupManager.openPower("poweroff") }
             }
         }
     }
