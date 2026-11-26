@@ -7,6 +7,7 @@ singleton Wallpaper 1.0 Wallpaper.qml
 singleton Osd 1.0 Osd.qml
 singleton DockPins 1.0 DockPins.qml
 singleton AppLauncher 1.0 AppLauncher.qml
+singleton FileSearch 1.0 FileSearch.qml
 singleton Umbriel 1.0 Umbriel.qml
 singleton Settings 1.0 Settings.qml
 singleton Clock 1.0 Clock.qml

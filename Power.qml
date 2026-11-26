@@ -193,7 +193,19 @@ Singleton {
         : UPower.displayDevice.percentage <= 0.05 ? 2
         : UPower.displayDevice.percentage <= 0.15 ? 1 : 0
     function ping() { Quickshell.execDetached(["paplay", "/usr/share/sounds/freedesktop/stereo/bell.oga"]) }
-    onBatteryAlertChanged: if (power.batteryAlert > 0) power.ping()
+    onBatteryAlertChanged: {
+        if (power.batteryAlert === 0) return
+        power.ping()
+        // The shell is itself the notification server, so DND, history
+        // and popups all apply automatically.
+        var crit = power.batteryAlert === 2
+        var pct = Math.round(UPower.displayDevice.percentage * 100)
+        Quickshell.execDetached(["notify-send", "-u", crit ? "critical" : "normal", "-a", "Battery",
+            "-i", crit ? "battery-empty-symbolic" : "battery-caution-symbolic",
+            crit ? "Battery Critical" : "Battery Low",
+            crit ? "Battery is critically low (" + pct + "%). Plug in your charger now."
+                 : "Battery is running low (" + pct + "%)."])
+    }
     property Timer criticalPing: Timer {
         interval: 120000
         repeat: true

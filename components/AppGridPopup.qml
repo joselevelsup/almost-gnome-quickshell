@@ -6,8 +6,9 @@ import QtQuick.Effects
 import ".."
 
 // GNOME-style app grid over the blurred wallpaper: every app in pages, and
-// typing searches them (Enter launches the selected one). Esc clears the
-// search or closes. The workspace overview is umbriel's own.
+// typing searches them (Enter launches the selected one) — plain query
+// searches apps, "/" files, ">" power actions. Esc clears the search or
+// closes. The workspace overview is umbriel's own.
 // Opens from the dock, the bottom-left hot corner or over IPC:
 // `qs ipc call launcher toggle`.
 PanelWindow {
@@ -31,13 +32,21 @@ PanelWindow {
     // As many rows of 150px tiles as fit (available height: below the search
     // bar, above the page dots).
     readonly property int perPage: resultCols * Math.max(1, Math.floor((height - 96 - 16 - 56 + tileGap) / (150 + tileGap)))
-    readonly property var results: AppLauncher.search(query, 18)
-    onQueryChanged: { selIndex = 0; pages.currentIndex = 0 }
+    readonly property string mode: AppLauncher.modeOf(query)
+    readonly property string term: AppLauncher.termOf(query)
+    readonly property var results: AppLauncher.tiles(query)
+    onQueryChanged: {
+        selIndex = 0
+        pages.currentIndex = 0
+        if (mode === "files") FileSearch.search(term)
+    }
 
-    function launch(entry) {
-        if (!entry) return
-        AppLauncher.launch(entry)
+    // Close before run: runAction may open the power dialog, which sets
+    // PopupManager.current, so a close after would cancel it instantly.
+    function activate(tile) {
+        if (!tile) return
         PopupManager.close()
+        tile.run()
     }
     function moveSelection(delta) {
         if (results.length === 0) return
@@ -149,7 +158,7 @@ PanelWindow {
                                 break
                             case Qt.Key_Return:
                             case Qt.Key_Enter:
-                                launcher.launch(launcher.results[launcher.selIndex])
+                                launcher.activate(launcher.results[launcher.selIndex])
                                 break
                             case Qt.Key_Left:  launcher.moveSelection(-1); break
                             case Qt.Key_Right: launcher.moveSelection(1); break
@@ -185,7 +194,7 @@ PanelWindow {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Enter to open · arrows to select · Esc to close"
+                    text: "Type to search · / files · > power · Esc to close"
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
                     font.pixelSize: 10
@@ -269,6 +278,17 @@ PanelWindow {
                                             elide: Text.ElideRight
                                             horizontalAlignment: Text.AlignHCenter
                                         }
+                                        // Files show their parent directory; apps stay single-line.
+                                        Text {
+                                            width: parent.width
+                                            text: appTile.modelData.sub
+                                            visible: launcher.mode === "files" && text.length > 0
+                                            color: Theme.fgDim
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 11
+                                            elide: Text.ElideRight
+                                            horizontalAlignment: Text.AlignHCenter
+                                        }
                                     }
 
                                     MouseArea {
@@ -278,7 +298,7 @@ PanelWindow {
                                         cursorShape: Qt.PointingHandCursor
                                         // Tiles sliding under the pointer mid-swipe must not select.
                                     onEntered: if (page.index === pages.currentIndex) launcher.selIndex = appTile.gi
-                                        onClicked: launcher.launch(appTile.modelData)
+                                        onClicked: launcher.activate(appTile.modelData)
                                     }
                                 }
                             }
@@ -345,7 +365,8 @@ PanelWindow {
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "No results for “" + launcher.query.trim() + "”"
+                        text: launcher.mode === "files" && launcher.term.length === 0 ? "Type a file name"
+                            : "No results for “" + launcher.query.trim() + "”"
                         color: Theme.fgDim
                         font.family: Theme.fontFamily
                         font.pixelSize: 11

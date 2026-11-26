@@ -39,4 +39,75 @@ QtObject {
             .slice(0, limit)
             .map(r => r.entry)
     }
+
+    // ---- Modes: plain query searches apps, "/" files, ">" power ----
+    // No trimStart(): the QML JS engine predates ES2019.
+    function modeOf(query) {
+        var q = query.replace(/^\s+/, "")
+        return q.startsWith("/") ? "files" : q.startsWith(">") ? "power" : "apps"
+    }
+
+    // The query without its mode prefix.
+    function termOf(query) { return query.replace(/^\s+/, "").slice(1).trim().toLowerCase() }
+
+    // Same rows as the quick settings power menu, destructive last.
+    readonly property var powerActions: [
+        { icon: "system-lock-screen-symbolic", name: "Lock Screen", action: "lock" },
+        { icon: "weather-clear-night-symbolic", name: "Suspend", action: "suspend" },
+        { icon: "system-reboot-symbolic", name: "Restart", action: "reboot" },
+        { icon: "system-log-out-symbolic", name: "Log Out", action: "logout" },
+        { icon: "system-shutdown-symbolic", name: "Power Off", action: "poweroff" }
+    ]
+
+    // Mirrors the quick settings power menu: suspend and log out run at
+    // once, reboot/power off go through the confirmation dialog.
+    function runAction(action) {
+        switch (action) {
+        case "lock": PopupManager.lockScreen(); break
+        case "suspend": Quickshell.execDetached(["systemctl", "suspend"]); break
+        case "reboot": PopupManager.openPower("reboot"); break
+        case "logout": Umbriel.msg(["session-quit", "skip-confirmation"]); break
+        case "poweroff": PopupManager.openPower("poweroff"); break
+        }
+    }
+
+    // Unified results for both launchers: { icon, name, sub, run }.
+    // Only reads FileSearch.results — popups bind to this, so calling
+    // FileSearch.search here would create a re-evaluation loop.
+    function tiles(query) {
+        var mode = modeOf(query)
+        var term = termOf(query)
+        if (mode === "power")
+            return powerActions
+                .filter(a => term.length === 0 || a.name.toLowerCase().indexOf(term) !== -1)
+                .map(a => ({ icon: a.icon, name: a.name, sub: "", run: () => AppLauncher.runAction(a.action) }))
+        if (mode === "files") {
+            // An empty term would list all of $HOME; ask for a name instead.
+            if (term.length === 0) return []
+            var home = Quickshell.env("HOME")
+            return FileSearch.results.map(r => {
+                var dir = r.path.slice(0, r.path.lastIndexOf("/"))
+                return {
+                    icon: r.isDir ? "folder" : "text-x-generic",
+                    name: r.path.slice(r.path.lastIndexOf("/") + 1),
+                    sub: dir.replace(home, "~"),
+                    run: () => AppLauncher.openPath(r.path)
+                }
+            })
+        }
+        return AppLauncher.search(query, 30).map(e => ({
+            icon: e.icon, name: e.name, sub: e.comment || e.genericName || "",
+            run: () => AppLauncher.launch(e)
+        }))
+    }
+
+    // FileSearch drops paths with quotes, so single quotes are safe in
+    // umbriel's sh.
+    function openPath(path) { AppLauncher.spawn(["xdg-open", "'" + path + "'"]) }
+
+    Component.onCompleted: {
+        console.assert(modeOf("/foo") === "files" && modeOf(">sus") === "power"
+            && modeOf("foo bar") === "apps" && termOf(">  Sus") === "sus",
+            "AppLauncher mode self-check failed")
+    }
 }

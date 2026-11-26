@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Services.Notifications
 
 // Notification server + history, GNOME style (the same panel shown when
@@ -32,6 +33,15 @@ QtObject {
                 time: new Date()
             }
             notifications.history = [entry].concat(notifications.history).slice(0, 50)
+
+            // The lock screen is a separate instance and can't see this
+            // server, so forward the notification there over IPC; the call
+            // is a silent no-op whenever no lock screen is running.
+            if (!notifications.dnd) Quickshell.execDetached([
+                "qs", "-p", Quickshell.shellPath("lock.qml"), "ipc", "call",
+                "locknotify", "show", "--", entry.appName, entry.summary,
+                entry.body || "", entry.appIcon || ""
+            ])
 
             // "tracked" keeps the notification alive so it can be shown as a
             // banner; the server removes it from trackedNotifications on its own

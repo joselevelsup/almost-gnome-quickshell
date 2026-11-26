@@ -1,10 +1,13 @@
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Networking
+import Quickshell.Services.Mpris
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Layouts
 import ".."
 
 // One monitor of the lock screen (lock.qml), GNOME 50 style: blurred
@@ -36,6 +39,11 @@ WlSessionLockSurface {
     readonly property bool wifi: Networking.devices.values.some(d => d.type === DeviceType.Wifi && d.connected)
     readonly property var audio: Pipewire.defaultAudioSink ? Pipewire.defaultAudioSink.audio : null
     PwObjectTracker { objects: Pipewire.defaultAudioSink ? [Pipewire.defaultAudioSink] : [] }
+
+    // MPRIS is plain DBus, so this instance can watch players directly
+    // alongside the shell. Whichever player is playing, else the first.
+    readonly property var player: Mpris.players.values.find(p => p.isPlaying)
+        || Mpris.players.values[0] || null
 
     // ---- Background ----
     Image {
@@ -143,6 +151,124 @@ WlSessionLockSurface {
         font.pixelSize: 14
     }
 
+    // ---- Media controls (GNOME-style, above the unlock hint) ----
+    Rectangle {
+        visible: surface.isMain && surface.player !== null
+            && (surface.player.trackTitle || "").length > 0
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 96 }
+        width: 380
+        height: 92
+        radius: Theme.radius - 2
+        color: Theme.withAlpha("#ffffff", 0.12)
+        border.width: 1
+        border.color: Theme.withAlpha("#ffffff", 0.25)
+
+        // Only the buttons take clicks; the card itself stays click-through
+        // so typing and clicking elsewhere still reach the unlock prompt.
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 10
+
+            // ---- Cover art ----
+            ClippingRectangle {
+                Layout.preferredWidth: 64
+                Layout.preferredHeight: 64
+                radius: Theme.radius - 6
+                color: "transparent"
+
+                Image {
+                    id: art
+                    anchors.fill: parent
+                    source: surface.player ? surface.player.trackArtUrl : ""
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    sourceSize.width: 128
+                    sourceSize.height: 128
+                    opacity: status === Image.Ready ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                }
+                SymbolicIcon {
+                    anchors.centerIn: parent
+                    visible: art.status !== Image.Ready
+                    name: "audio-x-generic-symbolic"
+                    size: 24
+                    tint: Theme.withAlpha("#ffffff", 0.6)
+                }
+            }
+
+            // ---- Text + controls ----
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 0
+
+                Text {
+                    Layout.fillWidth: true
+                    text: surface.player ? (surface.player.identity || "Player") : ""
+                    color: Theme.withAlpha("#ffffff", 0.6)
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 12
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: surface.player ? (surface.player.trackTitle || "Unknown title") : ""
+                    color: "#ffffff"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: text.length > 0
+                    text: surface.player ? (surface.player.trackArtist || "") : ""
+                    color: Theme.withAlpha("#ffffff", 0.8)
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                    elide: Text.ElideRight
+                }
+
+                Item { Layout.fillHeight: true }
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 6
+
+                    IconButton {
+                        implicitWidth: 28
+                        implicitHeight: 28
+                        flat: true
+                        icon: "media-skip-backward-symbolic"
+                        tint: Theme.withAlpha("#ffffff", 0.85)
+                        enabled: surface.player && surface.player.canGoPrevious
+                        onClicked: surface.player.previous()
+                    }
+                    IconButton {
+                        implicitWidth: 28
+                        implicitHeight: 28
+                        flat: true
+                        icon: surface.player && surface.player.isPlaying
+                            ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"
+                        tint: Theme.withAlpha("#ffffff", 0.85)
+                        enabled: surface.player && surface.player.canTogglePlaying
+                        onClicked: surface.player.togglePlaying()
+                    }
+                    IconButton {
+                        implicitWidth: 28
+                        implicitHeight: 28
+                        flat: true
+                        icon: "media-skip-forward-symbolic"
+                        tint: Theme.withAlpha("#ffffff", 0.85)
+                        enabled: surface.player && surface.player.canGoNext
+                        onClicked: surface.player.next()
+                    }
+                }
+            }
+        }
+    }
+
     // ---- Status icons (top right, like GNOME's lock screen panel) ----
     Row {
         visible: surface.isMain
@@ -163,6 +289,43 @@ WlSessionLockSurface {
             visible: surface.battery && surface.battery.isPresent
             percentage: visible ? surface.battery.percentage : 1
             charging: visible && surface.battery.state === UPowerDeviceState.Charging
+        }
+    }
+
+    // ---- Notification toasts (forwarded over IPC by the shell) ----
+    Column {
+        visible: surface.isMain
+        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 12 }
+        spacing: 8
+
+        // Deliberately no entrance/exit animations: the Repeater over the
+        // ctx.toasts array rebuilds the survivors on every dismissal, which
+        // would replay their entrance.
+        Repeater {
+            model: surface.ctx.toasts
+            delegate: NotificationRow {
+                id: lockToast
+                required property var modelData
+                width: 500
+                appName: modelData.appName
+                summary: modelData.summary
+                body: modelData.body || ""
+                appIcon: modelData.appIcon || ""
+                image: ""
+                time: null
+                elevated: true
+
+                onDismissRequested: surface.ctx.dismissToast(lockToast.modelData)
+
+                // Auto-dismiss pauses while hovered, like the shell's toasts.
+                HoverHandler { id: toastHover }
+
+                Timer {
+                    interval: 6000
+                    running: !toastHover.hovered
+                    onTriggered: surface.ctx.dismissToast(lockToast.modelData)
+                }
+            }
         }
     }
 

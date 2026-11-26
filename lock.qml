@@ -26,6 +26,21 @@ ShellRoot {
     readonly property string user: Quickshell.env("USER") || ""
     property string realName: ""
 
+    // Toasts while locked: the shell owns the notification server name, so
+    // it forwards each notification here over IPC instead.
+    property var toasts: []
+
+    function dismissToast(toast) { root.toasts = root.toasts.filter(t => t !== toast) }
+
+    property IpcHandler lockNotifyIpc: IpcHandler {
+        target: "locknotify"
+        function show(appName: string, summary: string, body: string, appIcon: string): void {
+            // Newest first, at most three on screen.
+            root.toasts = [{ appName: appName, summary: summary, body: body, appIcon: appIcon }]
+                .concat(root.toasts).slice(0, 3)
+        }
+    }
+
     function submit() {
         if (root.busy || root.buffer.length === 0) return
         root.errorText = ""

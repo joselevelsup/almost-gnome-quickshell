@@ -5,9 +5,11 @@ import QtQuick
 import ".."
 
 // Spotlight-style launcher (after icedman/search-light): a floating search
-// box, results listed under it as you type. umbriel blurs what's behind the
-// box (layer rule for quickshell:popup:spotlight). Up/Down select, Enter
-// launches, Esc clears the search or closes, clicking outside closes.
+// box, results below as you type — apps and power actions as a tile grid,
+// files as a list (paths don't fit tiles). Plain query searches apps, "/"
+// files, ">" power actions. umbriel blurs what's behind the box (layer rule
+// for quickshell:popup:spotlight). Up/Down select, Enter runs, Esc clears
+// the search or closes, clicking outside closes.
 // Opens over IPC: `qs ipc call spotlight toggle`.
 PanelWindow {
     id: spotlight
@@ -23,18 +25,28 @@ PanelWindow {
     property string query: ""
     property int selIndex: 0
     readonly property int rowHeight: 58
-    readonly property var results: query.trim().length > 0 ? AppLauncher.search(query, 30) : []
-    onQueryChanged: { selIndex = 0; list.positionViewAtBeginning() }
+    readonly property string mode: AppLauncher.modeOf(query)
+    readonly property string term: AppLauncher.termOf(query)
+    readonly property var results: query.trim().length > 0 ? AppLauncher.tiles(query) : []
+    onQueryChanged: {
+        selIndex = 0
+        if (mode === "files") FileSearch.search(term)
+        list.positionViewAtBeginning()
+        grid.positionViewAtBeginning()
+    }
 
-    function launch(entry) {
-        if (!entry) return
-        AppLauncher.launch(entry)
+    // Close before run: runAction may open the power dialog, which sets
+    // PopupManager.current, so a close after would cancel it instantly.
+    function activate(tile) {
+        if (!tile) return
         PopupManager.close()
+        tile.run()
     }
     function moveSelection(delta) {
         if (results.length === 0) return
         selIndex = Math.max(0, Math.min(results.length - 1, selIndex + delta))
-        list.positionViewAtIndex(selIndex, ListView.Contain)
+        if (mode === "files") list.positionViewAtIndex(selIndex, ListView.Contain)
+        else grid.positionViewAtIndex(selIndex, GridView.Contain)
     }
 
     onVisibleChanged: {
@@ -107,10 +119,17 @@ PanelWindow {
                         break
                     case Qt.Key_Return:
                     case Qt.Key_Enter:
-                        spotlight.launch(spotlight.results[spotlight.selIndex])
+                        spotlight.activate(spotlight.results[spotlight.selIndex])
                         break
-                    case Qt.Key_Up:      spotlight.moveSelection(-1); break
-                    case Qt.Key_Down:    spotlight.moveSelection(1); break
+                    // In the grid Up/Down jump a row, in the file list a line.
+                    case Qt.Key_Up:   spotlight.moveSelection(spotlight.mode === "files" ? -1 : -4); break
+                    case Qt.Key_Down: spotlight.moveSelection(spotlight.mode === "files" ? 1 : 4); break
+                    case Qt.Key_Left:
+                    case Qt.Key_Right:
+                        // While typing a path the horizontal arrows edit the text.
+                        if (spotlight.mode === "files") return
+                        spotlight.moveSelection(event.key === Qt.Key_Left ? -1 : 1)
+                        break
                     case Qt.Key_Tab:     spotlight.moveSelection(1); break
                     case Qt.Key_Backtab: spotlight.moveSelection(-1); break
                     default: return
@@ -121,7 +140,8 @@ PanelWindow {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: searchInput.text.length === 0
-                    text: "Search apps"
+                    text: spotlight.mode === "files" ? "Search files"
+                        : spotlight.mode === "power" ? "Power actions" : "Search apps"
                     color: Theme.fgDim
                     font: searchInput.font
                 }
@@ -145,10 +165,13 @@ PanelWindow {
             id: body
             anchors.top: field.bottom
             width: parent.width
-            // Nothing below the field until there's a query; at most 8 rows show.
+            // Nothing below the field until there's a query; at most 8 file
+            // rows or 3 grid rows show, the rest scrolls.
             height: spotlight.query.trim().length === 0 ? 0
                   : spotlight.results.length === 0 ? 77
-                  : Math.min(spotlight.results.length, 8) * spotlight.rowHeight + 16
+                  : spotlight.mode === "files"
+                    ? Math.min(spotlight.results.length, 8) * spotlight.rowHeight + 16
+                    : Math.min(Math.ceil(spotlight.results.length / 4), 3) * 116 + 16
 
             Rectangle {
                 anchors { top: parent.top; left: parent.left; right: parent.right }
@@ -157,11 +180,13 @@ PanelWindow {
                 visible: parent.height > 0
             }
 
+            // File paths don't fit tiles: rows with the parent directory.
             ListView {
                 id: list
                 anchors { fill: parent; margins: 8 }
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
+                visible: spotlight.mode === "files"
                 model: spotlight.results
 
                 delegate: Rectangle {
@@ -201,7 +226,7 @@ PanelWindow {
                         }
                         Text {
                             width: parent.width
-                            text: row.modelData.comment || row.modelData.genericName || ""
+                            text: row.modelData.sub
                             visible: text.length > 0
                             color: Theme.fgDim
                             font.family: Theme.fontFamily
@@ -216,7 +241,71 @@ PanelWindow {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onEntered: spotlight.selIndex = row.index
-                        onClicked: spotlight.launch(row.modelData)
+                        onClicked: spotlight.activate(row.modelData)
+                    }
+                }
+            }
+
+            // Apps and power actions as a compact tile grid.
+            GridView {
+                id: grid
+                anchors { fill: parent; margins: 8 }
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                visible: spotlight.mode !== "files"
+                model: spotlight.results
+                cellWidth: (box.width - 16) / 4
+                cellHeight: 116
+
+                delegate: Item {
+                    id: cell
+                    required property var modelData
+                    required property int index
+                    width: grid.cellWidth
+                    height: grid.cellHeight
+
+                    Rectangle {
+                        id: tile
+                        anchors { fill: parent; margins: 3 }
+                        readonly property bool selected: cell.index === spotlight.selIndex
+                        radius: Theme.radius - 2
+                        color: selected ? Theme.activeBg : tileMouse.containsMouse ? Theme.cardHoverBg : Theme.cardBg
+                        border.width: selected ? 2 : 1
+                        border.color: selected ? Theme.accent : Theme.border
+                        scale: tileMouse.pressed ? 0.96 : 1
+
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+
+                        Column {
+                            anchors.centerIn: parent
+                            width: parent.width
+                            spacing: 6
+                            IconImage {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                source: Quickshell.iconPath(cell.modelData.icon, "application-x-executable")
+                                implicitSize: 56
+                            }
+                            Text {
+                                width: parent.width - 4
+                                text: cell.modelData.name
+                                color: Theme.fg
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 13
+                                font.weight: tile.selected ? Font.DemiBold : Font.Normal
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: tileMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: spotlight.selIndex = cell.index
+                            onClicked: spotlight.activate(cell.modelData)
+                        }
                     }
                 }
             }
@@ -233,7 +322,8 @@ PanelWindow {
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "No results for “" + spotlight.query.trim() + "”"
+                    text: spotlight.mode === "files" && spotlight.term.length === 0 ? "Type a file name"
+                        : "No results for “" + spotlight.query.trim() + "”"
                     color: Theme.fgDim
                     font.family: Theme.fontFamily
                     font.pixelSize: 13

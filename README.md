@@ -46,13 +46,20 @@ dots or the arrow keys. Start typing to search; <kbd>Enter</kbd> launches the
 selected app. Apps are started through `umbriel msg spawn`, so they belong to
 the compositor and survive a shell restart.
 
+A `/` prefix searches files and folders under your home directory (<kbd>Enter</kbd>
+opens them), and a `>` prefix searches the power actions — Lock Screen,
+Suspend, Restart, Log Out, Power Off — with Restart/Power Off behind the same
+60‑second confirmation as the quick settings' power menu.
+
 ### Spotlight
 
 A second, lighter launcher inspired by
 [search-light](https://github.com/icedman/search-light): a floating search box
-over the blurred desktop, with matching apps listed under it as you type.
-<kbd>Up</kbd>/<kbd>Down</kbd> select, <kbd>Enter</kbd> launches, <kbd>Esc</kbd>
-clears or closes. It uses the same search as the app grid. Open it with
+over the blurred desktop, with matching apps shown as a tile grid under it as
+you type (a `/` prefix searches files, shown as a list — paths don't fit
+tiles; `>` searches the power actions). <kbd>Up</kbd>/<kbd>Down</kbd> select,
+<kbd>Enter</kbd> launches, <kbd>Esc</kbd> clears or closes. It uses the same
+search as the app grid. Open it with
 `qs ipc call spotlight toggle`; for the blur, add `spotlight` to the
 `quickshell:popup:(…)` layer rules in umbriel's config.
 
@@ -119,6 +126,11 @@ qs -d -p ~/.config/quickshell/lock.qml
 `pkill -f lock.qml`, then `qs -d -p ~/.config/quickshell/lock.qml` to get a
 fresh lock screen to unlock (it needs `WAYLAND_DISPLAY` set to your
 session's socket in that TTY).
+
+While the screen is locked, the shell forwards incoming notifications to the
+lock screen (up to three banners at the top, six seconds each), and an MPRIS
+card above the unlock hint controls whatever is playing — cover art, title,
+artist and previous/play‑pause/next.
 
 ### Wallpaper
 
@@ -205,8 +217,9 @@ Every command the shell accepts (also listed live by `qs ipc show`):
 | `qs ipc call winswitch confirm` | Alt+Tab: focus the selected window and close (bind to Alt release) |
 | `qs ipc call winswitch cancel` | Alt+Tab: close without switching |
 
-The lock screen itself is a separate instance with no IPC; start it directly
-with `qs -d -p ~/.config/quickshell/lock.qml`.
+The lock screen itself is a separate instance; start it directly with
+`qs -d -p ~/.config/quickshell/lock.qml`. It accepts one internal IPC target,
+`locknotify`, which the shell uses to forward notifications while locked.
 
 Example umbriel keybinds (`[keybinds]` in `~/.config/umbriel/config.toml`):
 
@@ -217,7 +230,9 @@ Example umbriel keybinds (`[keybinds]` in `~/.config/umbriel/config.toml`):
 ```
 
 Idle dimming, screen blanking and locking before sleep are handled by the
-shell itself (`Power.qml`), with timings from GNOME's power settings.
+shell itself (`Power.qml`), with timings from GNOME's power settings. Low
+battery (≤15%) and critical battery (≤5%) announce themselves with a ping and a
+notification.
 
 ## State
 
@@ -247,14 +262,15 @@ Wallpaper.qml         Current wallpaper, saved across restarts
 Osd.qml               Volume/brightness OSD state
 DockPins.qml          Pinned dock apps
 Caffeine.qml          Idle inhibitor state
-AppLauncher.qml       App search + launching through `umbriel msg spawn`
+AppLauncher.qml       App/file/power search modes + launching through `umbriel msg spawn`
+FileSearch.qml        `find`-based file search for the launchers' `/` mode
 components/
   Bar.qml             Top bar; hosts the background, every popup, dock and OSD
   Background.qml      Desktop wallpaper with a GNOME-style crossfade
   Workspaces.qml      GNOME 50 workspace indicator pill
   HotCorner.qml       Hover‑with‑delay hot corner (app grid)
-  AppGridPopup.qml    App grid in pages + app search
-  SpotlightPopup.qml  Spotlight-style search box launcher
+  AppGridPopup.qml    App grid in pages + search (apps, `/` files, `>` power)
+  SpotlightPopup.qml  Spotlight-style search box launcher, grid results
   QuickSettingsPanel.qml
   CalendarPopup.qml   Calendar, notifications, MediaPlayer
   Dock.qml            Dock (DockItem, DockMenu)
