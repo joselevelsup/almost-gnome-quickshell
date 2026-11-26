@@ -22,6 +22,8 @@ commands with `umbriel msg`.
 | ![Quick settings](docs/screenshots/quick_settings.png)<br>**Quick settings** | ![Calendar and notifications](docs/screenshots/notification_and_calendar_center.png)<br>**Calendar and notifications** |
 | ![Notification toasts](docs/screenshots/desktop_notifications.png)<br>**Notification toasts** | ![Screenshot panel](docs/screenshots/screenshot_tool.png)<br>**Screenshot panel** |
 | ![Lock screen](docs/screenshots/lock_screen.png)<br>**Lock screen** | ![Settings](docs/screenshots/settings.png)<br>**Settings** |
+| ![Spotlight: app search](docs/screenshots/spotlight_apps.png)<br>**Spotlight: app search** | ![Spotlight: file search](docs/screenshots/spotlight_files.png)<br>**Spotlight: file search** |
+| ![Spotlight: power actions](docs/screenshots/spotlight_power_menu.png)<br>**Spotlight: power actions** | |
 
 > The RAM usage in the top bar comes from my other open apps (Waterfox, Chrome,
 > Slack) — not from the shell itself.
